@@ -12,35 +12,35 @@
             color: white; 
             margin: 0; 
             padding: 10px; 
-            /* 화면 너비를 100%로 제한하고 넘치면 스크롤이 아닌 축소 유도 */
-            max-width: 100vw;
-            box-sizing: border-box;
+            overflow-x: auto; /* 확대 시 스크롤 허용 */
             display: flex; 
             flex-direction: column; 
-            align-items: center; 
+            /* [수정됨] center로 두면 모바일에서 왼쪽이 화면 밖으로 밀려 잘립니다. flex-start로 변경 */
+            align-items: flex-start; 
             touch-action: manipulation;
         }
 
-        h2 { margin: 5px 0 10px 0; }
-
-        /* 모바일 잘림 방지 핵심: 화면 크기에 맞춰 줄어들게 설정 */
-        .main-container {
-            display: flex;
-            gap: 15px; 
-            justify-content: center;
-            align-items: flex-start;
-            width: 100%;
-            max-width: 1350px; /* 좌 패널(160) + 중앙(1000) + 우 패널(160) + 여백 */
-            /* 화면이 좁아지면 비율 유지하면서 축소됨 */
-            transform-origin: top center;
+        h2 { 
+            margin: 5px 0 10px 0; 
+            align-self: center; /* 제목은 가운데 정렬 유지 */
         }
 
-        /* 미디어 쿼리를 사용하여 모바일 화면일 때 전체 크기 축소 */
-        @media screen and (max-width: 1350px) {
+        /* 메인 레이아웃: 좌 패널 - 중앙 캔버스 - 우 패널 */
+        .main-container {
+            display: flex;
+            gap: 15px; /* 패널 사이 간격 */
+            justify-content: flex-start;
+            align-items: flex-start;
+            width: max-content; /* 컨텐츠 크기에 맞춤 */
+            margin: 0 auto; /* 데스크탑 등 화면이 넓을 때는 전체를 가운데 정렬 */
+            transform-origin: top left; /* 모바일에서 축소될 때 왼쪽 위를 기준으로 축소 */
+        }
+
+        /* [추가됨] 모바일 가로화면 등 해상도가 전체 게임 폭(약 1360px)보다 작을 때 
+           화면 폭에 맞춰 통째로 비율을 줄여서 한 화면에 다 들어오게 만듭니다. */
+        @media screen and (max-width: 1360px) {
             .main-container {
-                /* 화면 너비에 비례하여 컨테이너 스케일 다운 */
-                transform: scale(calc(100vw / 1350)); 
-                margin-bottom: calc((100vw / 1350 - 1) * 500px); /* 축소된 높이 보정 */
+                transform: scale(calc(100vw / 1360));
             }
         }
 
@@ -55,7 +55,6 @@
             border-radius: 8px;
             box-sizing: border-box;
             border: 2px solid #535c68;
-            flex-shrink: 0; /* 패널 크기 압축 방지 */
         }
 
         .side-panel-title {
@@ -105,7 +104,6 @@
             display: flex;
             flex-direction: column;
             width: 1000px;
-            flex-shrink: 0; /* 중앙 캔버스 크기 강제 유지 (스케일로 조절됨) */
         }
 
         /* 캔버스 래퍼 및 캔버스 */
@@ -113,8 +111,6 @@
             position: relative; 
             transition: transform 0.05s; 
             margin-bottom: 5px;
-            width: 1000px;
-            height: 500px;
         }
         
         canvas { 
@@ -127,7 +123,6 @@
             height: 500px;
             display: block;
             touch-action: none;
-            box-sizing: border-box;
         }
 
         /* 상단/하단 정보 패널 (1000px 고정) */
@@ -309,6 +304,7 @@
         const path = [{x:-50,y:250},{x:850,y:250},{x:850,y:400},{x:150,y:400},{x:150,y:100},{x:1050,y:100}];
 
         function startGame(difficulty) {
+            // 난이도 30% 추가 증가 (기존 대비 전체적으로 상향)
             if (difficulty === 'easy') diffMult = 1.56; 
             else if (difficulty === 'normal') diffMult = 1.872; 
             else if (difficulty === 'hard') diffMult = 2.4336; 
