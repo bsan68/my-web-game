@@ -2,8 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
-    <title>K-자격증 걸즈 디펜스</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>K-자격증 걸즈 디펜스 M</title>
     <style>
         body { 
             font-family: 'Malgun Gothic', sans-serif; 
@@ -11,240 +11,165 @@
             background-color: #1e272e; 
             color: white; 
             margin: 0; 
-            padding: 10px; 
-            overflow-x: auto; /* 확대 시 스크롤 허용 */
+            padding: 0; 
+            overflow-x: hidden; 
             display: flex; 
             flex-direction: column; 
             align-items: center; 
             touch-action: manipulation;
         }
-
-        h2 { margin: 5px 0 10px 0; }
-
-        /* 메인 레이아웃: 좌 패널 - 중앙 캔버스 - 우 패널 */
-        .main-container {
-            display: flex;
-            gap: 15px; /* 패널 사이 간격 */
-            justify-content: center;
-            align-items: flex-start;
-            width: max-content; /* 컨텐츠 크기에 맞춤 */
-        }
-
-        /* 양옆 UI 패널 공통 스타일 */
-        .side-panel {
-            width: 160px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            background: rgba(45, 52, 54, 0.8);
-            padding: 10px;
-            border-radius: 8px;
-            box-sizing: border-box;
-            border: 2px solid #535c68;
-        }
-
-        .side-panel-title {
-            color: #f1c40f;
-            font-size: 14px;
-            font-weight: bold;
-            margin: 0 0 5px 0;
-            border-bottom: 1px solid #7f8c8d;
-            padding-bottom: 5px;
-        }
-
-        /* 버튼 기본 스타일 재정의 */
-        button { 
-            font-family: 'Malgun Gothic'; 
-            font-size: 12px; 
-            font-weight: bold; 
-            padding: 8px 5px; 
-            cursor: pointer; 
-            border: none; 
-            border-radius: 5px; 
-            transition: 0.1s; 
-            opacity: 0.9;
-            width: 100%; /* 패널 너비 꽉 채우기 */
-            word-break: keep-all;
-        }
-        button:hover { opacity: 1; transform: scale(1.02); }
-        button.active { opacity: 1; box-shadow: 0 0 10px rgba(255,255,255,0.8); border: 2px solid white; transform: scale(1.05); }
-
-        /* 좌측: 시스템 및 스킬 버튼 색상 */
-        .sys-btn { background: #2c3e50; color: white; }
-        .global-skill-btn { background: #e67e22; color: white; border: 2px solid #d35400; }
-        .global-skill-btn:disabled { background: #7f8c8d; border: 2px solid #95a5a6; color: #bdc3c7; cursor: not-allowed; transform: none; }
-
-        /* 우측: 채용 버튼 색상 */
-        #btnRandom { background: #3498db; color: white; font-size: 13px; border: 2px solid #2980b9;} 
-        #btn10 { background: #2ecc71; color: white; font-size: 13px; border: 2px solid #27ae60; box-shadow: 0 0 10px #2ecc71;} 
-        #btn6 { background: #e84393; color: white; } 
-        #btn7 { background: #d63031; color: white; } 
-        #btn8 { background: #fbc531; color: #2d3436; } 
-        #btn9 { background: #eb4d4b; color: white; } 
-        .gacha-btn { background: #9b59b6; color: white; font-size: 13px; border: 2px solid #8e44ad; animation: pulse 1.5s infinite; margin-top: 5px;}
         
-        /* 중앙 영역 래퍼 */
-        .center-area {
-            display: flex;
-            flex-direction: column;
-            width: 1000px;
-        }
-
-        /* 캔버스 래퍼 및 캔버스 */
+        /* 캔버스 래퍼: 게임 화면을 최우선으로 크게 */
         #canvasWrapper { 
             position: relative; 
-            transition: transform 0.05s; 
-            margin-bottom: 5px;
+            width: 100vw; 
+            max-width: 1000px;
+            background: #000;
         }
         
         canvas { 
             background: #dff9fb; 
-            border: 4px solid #535c68; 
-            cursor: crosshair; 
-            box-shadow: 0px 0px 25px rgba(0,0,0,0.7); 
-            border-radius: 8px; 
-            width: 1000px; 
-            height: 500px;
             display: block;
+            width: 100% !important; 
+            height: auto !important; 
             touch-action: none;
+            border-bottom: 2px solid #535c68;
         }
-
-        /* 상단/하단 정보 패널 (1000px 고정) */
-        .top-panel, .bottom-panel { 
-            background: rgba(178, 190, 195, 0.9); 
+        
+        /* 패널 및 버튼 레이아웃 최적화 (공간 절약) */
+        .compact-panel { 
+            background: rgba(178, 190, 195, 0.95); 
             color: #2d3436; 
-            padding: 8px 15px; 
-            width: 1000px; 
-            border-radius: 6px; 
+            padding: 5px 10px; 
+            width: 100%; 
             display: flex; 
             justify-content: space-between; 
             align-items: center; 
             font-weight: bold; 
-            font-size: 15px; 
-            box-sizing: border-box; 
-            margin-bottom: 5px;
+            font-size: 13px; 
+            box-sizing: border-box;
         }
 
-        .bottom-panel { margin-top: 0; background: rgba(52, 73, 94, 0.95); color: white; justify-content: center; }
-
-        .highlight { color: #0984e3; font-size: 20px; }
-        .danger { color: #d63031; font-size: 20px; }
-        .wave-alert { color: #6c5ce7; font-size: 19px; font-weight: 900; }
-        .timer-text { color: #218c74; font-size: 19px; }
-
-        /* 하단 상점 버튼들 (가로 배치) */
-        .shop-group { display: flex; gap: 10px; width: 100%; }
-        .shop-btn { background: #f1c40f; color: #2c3e50; font-size: 13px; }
-
-        /* 타워 정보 텍스트 테이블 */
-        .tower-info-table { 
-            background: rgba(45, 52, 54, 0.9); 
-            padding: 8px; 
-            width: 1000px; 
-            border-radius: 8px; 
-            text-align: center; 
-            border: 2px solid #7f8c8d; 
-            box-sizing: border-box; 
-            min-height: 48px; 
-            color: white; 
-            font-size: 14px;
-            margin-bottom: 5px;
+        .btn-grid { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 2px; 
+            width: 100%; 
+            padding: 2px;
+            box-sizing: border-box;
         }
-        .info-row { display: inline-block; margin: 0 15px; }
-        .info-label { color: #f1c40f; font-weight: bold; }
-        #skillDescText { display: block; width: 100%; text-align: center; font-size: 12px; color: #ffeaa7; margin-top: 5px; }
 
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        button { 
+            font-size: 11px; 
+            padding: 8px 2px; 
+            font-weight: bold; 
+            border-radius: 4px; 
+            border: none;
+            cursor: pointer;
+            word-break: keep-all;
+        }
 
-        #clearOverlay, #startOverlay { display: flex; position: absolute; top: 0; left: 0; width: 1000px; height: 500px; background: rgba(0,0,0,0.85); flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; z-index: 20; pointer-events: auto; }
-        #clearOverlay { display: none; color: gold; font-size: 40px; font-weight: bold; }
+        .main-btn { background: #3498db; color: white; grid-column: span 2; font-size: 13px; }
+        .elite-btn { background: #2ecc71; color: white; grid-column: span 2; font-size: 13px; }
+        .gacha-btn { background: #9b59b6; color: white; grid-column: span 4; padding: 10px; font-size: 14px; animation: pulse 1.5s infinite; }
         
-        .diff-btn { font-size: 18px; padding: 15px 30px; border: 2px solid white; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; background: transparent; color: white; margin: 0 5px;}
-        .diff-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.5); background: rgba(255,255,255,0.1) !important; }
+        .tower-info-table { 
+            background: rgba(44, 62, 80, 0.95); 
+            padding: 5px; 
+            width: 100%; 
+            font-size: 11px; 
+            min-height: 40px; 
+            border-top: 1px solid #7f8c8d;
+        }
+
+        .shop-group { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 2px; 
+            width: 100%;
+            padding: 2px;
+        }
+
+        .skill-group {
+            display: flex;
+            overflow-x: auto;
+            white-space: nowrap;
+            width: 100%;
+            padding: 5px;
+            gap: 5px;
+            background: #2c3e50;
+        }
+
+        .global-skill-btn { 
+            background: #e67e22; color: white; padding: 6px 10px; border-radius: 4px; font-size: 11px; flex-shrink: 0;
+        }
+
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.02); } 100% { transform: scale(1); } }
+
+        #startOverlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100;
+        }
+        #clearOverlay { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: gold; font-size: 30px; font-weight: bold;}
     </style>
 </head>
 <body>
 
-    <h2>💖 K-자격증 걸즈 디펜스 💖</h2>
+    <div class="compact-panel">
+        <div>💰 <span id="money" style="color:#0984e3">800</span>만</div>
+        <div id="waveText" style="color:#6c5ce7; font-size: 11px;">입사 대기</div>
+        <div id="playTimer">00:00</div>
+        <div>❤️ <span id="hp" style="color:#d63031">20</span></div>
+    </div>
 
-    <div class="main-container">
-        
-        <div class="side-panel">
-            <p class="side-panel-title">⚙️ 시스템</p>
-            <button class="sys-btn" id="btnPause" onclick="togglePause()">⏸️ 일시중지</button>
-            <button class="sys-btn" style="background:#e74c3c;" onclick="restartGame()">🔄 Restart</button>
-            <button class="sys-btn" onclick="forceNextWave()">⏩ 웨이브 강제</button>
-            <button id="btnDemolish" class="sys-btn" style="background:#7f8c8d;" onclick="toggleDemolish()">🔨 권고사직(제거)</button>
-            
-            <p class="side-panel-title" style="margin-top: 15px;">✨ 스킬</p>
-            <button id="skillBtn6" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(6)" onmouseover="showSkillDesc(6)" onmouseout="hideSkillDesc()">💼 종합 정밀점검</button>
-            <button id="skillBtn7" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(7)" onmouseover="showSkillDesc(7)" onmouseout="hideSkillDesc()">👑 방어력 감소</button>
-            <button id="skillBtn8" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(8)" onmouseover="showSkillDesc(8)" onmouseout="hideSkillDesc()">⚡🏢 특급감리 폭주</button>
-            <button id="skillBtn9" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(9)" onmouseover="showSkillDesc(9)" onmouseout="hideSkillDesc()">🔥 소방시설 긴급점검</button>
-            <button id="skillBtn10" class="global-skill-btn" style="display:none; background:#27ae60; border-color:#2ecc71;" onclick="useGlobalSkill(10)" onmouseover="showSkillDesc(10)" onmouseout="hideSkillDesc()">✨ 사신의 지적</button>
-            <span id="noSkillText" style="color: #95a5a6; font-size: 11px;">건설된 상위 자격증 없음</span>
+    <div id="canvasWrapper">
+        <canvas id="gameCanvas" width="1000" height="500"></canvas>
+        <div id="startOverlay">
+            <h2 style="color: #f1c40f; margin-bottom:20px;">난이도 선택</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 80%;">
+                <button style="background:#3498db; color:white; padding:15px;" onclick="startGame('easy')">쉬움</button>
+                <button style="background:#ecf0f1; padding:15px;" onclick="startGame('normal')">보통</button>
+                <button style="background:#e67e22; color:white; padding:15px;" onclick="startGame('hard')">어려움</button>
+                <button style="background:#e74c3c; color:white; padding:15px;" onclick="startGame('hell')">헬</button>
+            </div>
         </div>
+        <div id="clearOverlay"></div>
+    </div>
 
-        <div class="center-area">
-            
-            <div class="top-panel">
-                <div>💰 연봉: <span id="money" class="highlight">800</span> 만원</div>
-                <div class="wave-alert" id="waveText">입사 준비 중...</div>
-                <div class="timer-text" id="playTimer">00:00</div>
-                <div>❤️ 멘탈: <span id="hp" class="danger">20</span></div>
-            </div>
+    <div class="btn-grid">
+        <button id="btnRandom" class="main-btn" onclick="selectType('random')">🎲 일반 랜덤 채용 (60만)</button>
+        <button id="btn10" class="elite-btn" onclick="selectType(10)">✨ 융합 전문가 (20억)</button>
+        <button id="btn6" style="background:#e84393; color:white;" onclick="selectType(6)">💼 관리사</button>
+        <button id="btn7" style="background:#d63031; color:white;" onclick="selectType(7)">👑 지도사</button>
+        <button id="btn8" style="background:#fbc531;" onclick="selectType(8)">⚡ 건전기</button>
+        <button id="btn9" style="background:#eb4d4b; color:white;" onclick="selectType(9)">🔥 소방기술</button>
+        <button class="gacha-btn" onclick="selectType('gacha')">🎰 전체 걸즈 가챠 (1억)</button>
+    </div>
 
-            <div id="canvasWrapper">
-                <canvas id="gameCanvas" width="1000" height="500"></canvas>
-                
-                <div id="startOverlay">
-                    <h1 style="font-size: 50px; color: #f1c40f; text-shadow: 0 0 10px #f39c12; margin-bottom: 10px; margin-top:0;">🔥 난이도 선택 🔥</h1>
-                    <p style="font-size: 18px; color: #bdc3c7; margin-bottom: 40px;">어려울수록 적의 체력과 공격력이 폭발적으로 증가합니다.</p>
-                    <div style="display: flex;">
-                        <button class="diff-btn" style="color:#3498db; border-color:#3498db;" onclick="startGame('easy')">쉬움</button>
-                        <button class="diff-btn" style="color:white; border-color:white;" onclick="startGame('normal')">보통</button>
-                        <button class="diff-btn" style="color:#e67e22; border-color:#e67e22;" onclick="startGame('hard')">어려움</button>
-                        <button class="diff-btn" style="color:#e74c3c; border-color:#e74c3c;" onclick="startGame('hell')">헬</button>
-                    </div>
-                </div>
-                
-                <div id="clearOverlay"></div>
-            </div>
+    <div class="tower-info-table" id="towerInfoBox">
+        <div id="infoContent">버튼 클릭/캐릭터 터치 시 정보 표시</div>
+    </div>
 
-            <div class="tower-info-table" id="towerInfoBox">
-                <div id="infoContent" style="color:#bdc3c7;">버튼에 마우스를 올리거나 맵의 걸즈를 클릭하면 정보가 표시됩니다.</div>
-                <span id="skillDescText"></span>
-            </div>
+    <div class="skill-group">
+        <span style="font-size:11px; color:#f1c40f; align-self:center;">SKILL:</span>
+        <button id="skillBtn6" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(6)">💼 점검</button>
+        <button id="skillBtn7" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(7)">👑 방깎</button>
+        <button id="skillBtn8" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(8)">⚡ 폭주</button>
+        <button id="skillBtn9" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(9)">🔥 소방</button>
+        <button id="skillBtn10" class="global-skill-btn" style="display:none; background:#2ecc71;" onclick="useGlobalSkill(10)">✨ 사신</button>
+        <span id="noSkillText" style="font-size:11px; color:#95a5a6;">상위 걸즈 없음</span>
+    </div>
 
-            <div class="bottom-panel">
-                <div class="shop-group">
-                    <span style="font-size:13px; align-self:center;">🛒 <b>스펙업:</b></span>
-                    <button class="shop-btn" id="btnShopDmg" onclick="buyGlobal('dmg')">전체 딜 +10% (1000만)</button>
-                    <button class="shop-btn" id="btnShopRange" onclick="buyGlobal('range')">전체 사거리 +10% (1000만)</button>
-                    <button class="shop-btn" id="btnShopDef" style="background:#2ecc71; color:white;" onclick="buyGlobal('def')">방어력 강화 +20% (1000만)</button>
-                    <button class="shop-btn" style="background:#e74c3c; color:white; animation: pulse 1.5s infinite;" onclick="playSlotMachine()">🎰 하이리스크 (슬롯)</button>
-                </div>
-            </div>
-
-        </div>
-
-        <div class="side-panel">
-            <p class="side-panel-title">🤝 채용</p>
-            <button id="btnRandom" class="active" onclick="selectType('random')" onmouseover="showTowerInfo('random')">🎲 랜덤 채용<br><span style="font-size:10px">(60만)</span></button>
-            <button id="btn10" onclick="selectType(10)" onmouseover="showTowerInfo(10)">✨ 융합 전문가<br><span style="font-size:10px">(20억)</span></button>
-            
-            <hr style="width:100%; border: 0.5px solid #636e72; margin: 2px 0;">
-            
-            <button id="btn6" onclick="selectType(6)" onmouseover="showTowerInfo(6)">💼 시설관리사<br><span style="font-size:10px">(3억)</span></button>
-            <button id="btn7" onclick="selectType(7)" onmouseover="showTowerInfo(7)">👑 안전지도사<br><span style="font-size:10px">(4억)</span></button>
-            <button id="btn8" onclick="selectType(8)" onmouseover="showTowerInfo(8)">⚡🏢 건전기<br><span style="font-size:10px">(8억)</span></button>
-            <button id="btn9" onclick="selectType(9)" onmouseover="showTowerInfo(9)">🔥 소방기술사<br><span style="font-size:10px">(10억)</span></button>
-            
-            <hr style="width:100%; border: 0.5px solid #636e72; margin: 2px 0;">
-            
-            <button id="btnGacha" class="gacha-btn" onclick="selectType('gacha')" onmouseover="showTowerInfo('gacha')">🎰 전체 가챠<br><span style="font-size:10px">(1억)</span></button>
-        </div>
-
+    <div class="shop-group">
+        <button style="background:#2c3e50; color:white;" onclick="togglePause()" id="btnPause">⏸️ 정지</button>
+        <button style="background:#7f8c8d; color:white;" onclick="toggleDemolish()" id="btnDemolish">🔨 사직</button>
+        <button style="background:#e74c3c; color:white;" onclick="playSlotMachine()">🎰 투자</button>
+        <button id="btnShopDmg" style="background:#f39c12;" onclick="buyGlobal('dmg')">딜+10%</button>
+        <button id="btnShopRange" style="background:#f39c12;" onclick="buyGlobal('range')">범위+10%</button>
+        <button id="btnShopDef" style="background:#2ecc71; color:white;" onclick="buyGlobal('def')">방어력강화</button>
     </div>
 
     <script>
@@ -255,7 +180,6 @@
         const startOverlay = document.getElementById('startOverlay');
         const timerText = document.getElementById('playTimer');
         const infoContent = document.getElementById('infoContent');
-        const skillDescText = document.getElementById('skillDescText');
         
         const CELL_SIZE = 50;
         const COLS = 20; 
@@ -289,7 +213,6 @@
         const path = [{x:-50,y:250},{x:850,y:250},{x:850,y:400},{x:150,y:400},{x:150,y:100},{x:1050,y:100}];
 
         function startGame(difficulty) {
-            // 난이도 30% 추가 증가 (기존 대비 전체적으로 상향)
             if (difficulty === 'easy') diffMult = 1.56; 
             else if (difficulty === 'normal') diffMult = 1.872; 
             else if (difficulty === 'hard') diffMult = 2.4336; 
@@ -326,23 +249,6 @@
             isGameStarted = true;
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                if (!isGameStarted || gameOver || isClearing) return;
-                isDemolishMode = false;
-                document.getElementById('btnDemolish').style.background = "#7f8c8d";
-                selectedTower = null;
-                movingTower = null;
-                
-                buildType = 'random';
-                let allBtns = ['btnRandom', 'btn6', 'btn7', 'btn8', 'btn9', 'btn10', 'btnGacha'];
-                allBtns.forEach(id => { let el = document.getElementById(id); if(el) el.classList.remove('active'); });
-                document.getElementById('btnRandom').classList.add('active');
-                
-                resetTowerInfo();
-            }
-        });
-
         function distToSegment(px, py, x1, y1, x2, y2) {
             let A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
             let dot = A * C + B * D;
@@ -371,8 +277,6 @@
             return true;
         }
 
-        let currentWaveIdx = 0; let waveTimer = 0;
-
         const towerDesc = {
             0: { title: "⚡ 전깃걸", feature: "단일 츤데레 빔 / 감전 슬로우", limit: "제한 없음" },
             1: { title: "🧯 소방걸", feature: "열정의 범위 화염 폭사", limit: "제한 없음" },
@@ -380,21 +284,13 @@
             3: { title: "❄️ 공조걸", feature: "직선 관통 냉동빔 / 극강 빙결", limit: "최대 5명" },
             4: { title: "💻 정처걸", feature: "코딩 버프 (주변 공속 증가)", limit: "최대 5명" },
             5: { title: "👷 산안걸", feature: "안전관리비 수금 (자금 확보)", limit: "최대 5명" },
-            6: { title: "💼 소방시설관리사", feature: "세모 폭탄 발사 (적중 시 유도 파편 분열)", limit: "1명 (중복불가)" },
-            7: { title: "👑 산업안전지도사(전기)", feature: "사각형 투척 (적중 시 사방으로 폭발) & 주변 버프 & 자금 확보", limit: "1명 (중복불가)" },
-            8: { title: "⚡🏢 건축전기설비기술사", feature: "노란색 그라데이션 유도 미사일 5개 발사<br><span style='color:#f1c40f'>[패시브: 기술사의 위엄] 주변 300 공속 15% 증가 (중첩 가능)</span>", limit: "1명 (중복불가)" },
-            9: { title: "🔥 소방기술사", feature: "검붉은 십자가 레이저 3개 생성 (3초 지속 장판)<br><span style='color:#f1c40f'>[패시브: 기술사의 위엄] 주변 300 공속 15% 증가 (중첩 가능)</span>", limit: "1명 (중복불가)" },
-            10: { title: "✨ 안전·시설 융합 전문가", feature: "수직 검녹색 4줄기 레이저 타격<br><span style='color:#2ecc71'>[패시브: 전문직 2개의 위엄] 주변 300 공속 15% 증가 (중첩 가능)</span>", limit: "1명 (중복불가/융합가능)" },
-            'random': { title: "🎲 일반 랜덤 채용", feature: "전깃걸~산안걸 중 1명이 무작위 등장<br><span style='color:#f1c40f'>✨황금(3%)</span> <span style='color:#9b59b6'>🌟반전(10%)</span>", limit: "60만 소모 / 칸 단위 배치" },
-            'gacha': { title: "🎲 전체 걸즈 랜덤 채용", feature: "95% 일반, 5% 상위 걸즈 등장.<br><span style='color:#f1c40f'>✨황금(3%)</span> <span style='color:#9b59b6'>🌟반전(10%)</span>", limit: "1억 원 소모" }
-        };
-
-        const skillDesc = {
-            6: "[종합 정밀 점검]: 범위 내(300) 적들에게 기본 데미지의 3배 폭격 피해를 입힙니다. (쿨타임 15초)",
-            7: "[위험구역 설정]: 범위 내 적들의 방어력을 50% 감소시켜 10초간 모든 피해를 2배로 받게 합니다. (쿨타임 15초)",
-            8: "[특급 감리 전기 선임]: 30초 동안 공격 속도/데미지가 5배가 되며 적 이동속도를 90% 감소시키는 폭주 모드. 다중 검노랑 레이저로 공격합니다. (쿨타임 45초)",
-            9: "[소방시설 긴급점검]: 5초간 몬스터 전체 이속 80% 감소 및 현재 체력 10%를 깎는 화염 미사일 3발 투하. (쿨타임 15초)",
-            10: "[사신의 지적]: 거대한 안전모 쓴 사신이 적들을 지적하여 전체 적 체력을 40% 감소시키고 3초 스턴을 부여합니다. (쿨타임 30초)"
+            6: { title: "💼 소방시설관리사", feature: "세모 폭탄 발사", limit: "1명 (중복불가)" },
+            7: { title: "👑 산업안전지도사(전기)", feature: "사각형 투척", limit: "1명 (중복불가)" },
+            8: { title: "⚡🏢 건축전기설비기술사", feature: "유도 미사일 5개 발사", limit: "1명 (중복불가)" },
+            9: { title: "🔥 소방기술사", feature: "십자가 레이저 3개 생성", limit: "1명 (중복불가)" },
+            10: { title: "✨ 안전·시설 융합 전문가", feature: "수직 검녹색 4줄기 레이저 타격", limit: "1명 (중복불가/융합가능)" },
+            'random': { title: "🎲 일반 랜덤 채용", feature: "전깃걸~산안걸 중 1명이 무작위 등장", limit: "60만 소모" },
+            'gacha': { title: "🎲 전체 걸즈 랜덤 채용", feature: "95% 일반, 5% 상위 걸즈 등장", limit: "1억 원 소모" }
         };
 
         const towerStats = [
@@ -657,7 +553,6 @@
             ctx.restore();
         }
 
-        // === 💖 몬스터 걸즈 (황금/반전 최적화) ===
         function drawMonsterGirl(ctx, x, y, mType, isBoss, frame, hpRatio, defDebuff, rType) {
             ctx.save();
             ctx.translate(x, y);
