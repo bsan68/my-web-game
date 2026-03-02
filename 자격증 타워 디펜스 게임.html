@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>K-자격증 걸즈 디펜스</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; text-align: center; background-color: #1e272e; color: white; margin: 0; padding: 10px; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
+        
+        #canvasWrapper { display: inline-block; position: relative; transition: transform 0.05s; margin-top: 5px; }
+        canvas { background: #dff9fb; border: 4px solid #535c68; cursor: crosshair; box-shadow: 0px 0px 25px rgba(0,0,0,0.7); border-radius: 8px; }
+        
+        .panel { background: rgba(178, 190, 195, 0.9); color: #2d3436; padding: 8px; margin: 3px auto; width: 1000px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 15px; box-sizing: border-box; }
+        .highlight { color: #0984e3; font-size: 20px; }
+        .danger { color: #d63031; font-size: 20px; }
+        .wave-alert { color: #6c5ce7; font-size: 19px; font-weight: 900; }
+        .timer-text { color: #218c74; font-size: 19px; }
+        
+        .btn-group { margin: 3px auto; width: 1000px; display: flex; flex-wrap: wrap; justify-content: center; gap: 3px; }
+        button { font-family: 'Malgun Gothic'; font-size: 12px; font-weight: bold; padding: 5px 8px; cursor: pointer; border: none; border-radius: 5px; transition: 0.1s; opacity: 0.8; }
+        button.active { opacity: 1; box-shadow: 0 0 12px 3px rgba(255,255,255,0.9); border: 2px solid white; transform: scale(1.03); }
+        .shop-btn { background: #f1c40f; color: #2c3e50; opacity: 1; font-size: 13px; padding: 6px; }
+        .shop-btn:hover { background: #f39c12; }
+        .sys-btn { background: #2c3e50; color: white; opacity: 1; font-size: 13px; padding: 6px;}
+        .gacha-btn { background: #9b59b6; color: white; opacity: 1; font-size: 14px; padding: 6px 12px; border: 2px solid #8e44ad; animation: pulse 1.5s infinite; }
+        .global-skill-btn { background: #e67e22; color: white; opacity: 1; font-size: 14px; padding: 8px 12px; border-radius: 8px; border: 2px solid #d35400; box-shadow: 0 4px 6px rgba(0,0,0,0.3); transition: 0.1s; }
+        .global-skill-btn:hover { transform: scale(1.05); }
+        .global-skill-btn:active { transform: scale(0.95); }
+        .global-skill-btn:disabled { background: #7f8c8d; border: 2px solid #95a5a6; color: #bdc3c7; cursor: not-allowed; box-shadow: none; transform: none; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+        .tower-info-table { background: rgba(52, 73, 94, 0.95); padding: 10px; margin: 5px auto; width: 1000px; border-radius: 8px; text-align: center; border: 2px solid #7f8c8d; box-sizing: border-box; min-height: 48px; color: white; font-size: 14px;}
+        .info-row { display: inline-block; margin: 0 15px; }
+        .info-label { color: #f1c40f; font-weight: bold; }
+        
+        #skillDescText { display: block; width: 100%; text-align: center; font-size: 13px; color: #ffeaa7; margin-top: 5px; }
+
+        #btnRandom { background: #3498db; color: white; font-size: 14px; padding: 8px 15px; border: 2px solid #2980b9;} 
+        #btn6 { background: #e84393; color: white; } #btn7 { background: #d63031; color: white; } 
+        #btn8 { background: #fbc531; color: #2d3436; } #btn9 { background: #eb4d4b; color: white; } 
+        #btn10 { background: #2ecc71; color: white; font-size: 14px; padding: 6px 12px; border: 2px solid #27ae60; box-shadow: 0 0 10px #2ecc71;} 
+        
+        #clearOverlay, #startOverlay { display: flex; position: absolute; top: 0; left: 0; width: 1000px; height: 500px; background: rgba(0,0,0,0.85); flex-direction: column; justify-content: center; align-items: center; border-radius: 8px; z-index: 20; pointer-events: auto; }
+        #clearOverlay { display: none; color: gold; font-size: 40px; font-weight: bold; }
+        
+        .diff-btn { font-size: 18px; padding: 15px 30px; border: 2px solid white; cursor: pointer; border-radius: 8px; font-weight: bold; transition: 0.2s; background: transparent; }
+        .diff-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(255,255,255,0.5); background: rgba(255,255,255,0.1) !important; }
+    </style>
+</head>
+<body>
+
+    <h2 style="margin: 5px 0;">💖 K-자격증 걸즈 디펜스 💖</h2>
+    
+    <div class="panel info-panel">
+        <div>💰 연봉: <span id="money" class="highlight">800</span> 만원</div>
+        <div class="wave-alert" id="waveText">입사 준비 중...</div>
+        <div class="timer-text" id="playTimer">00:00</div>
+        <div>❤️ 멘탈: <span id="hp" class="danger">20</span></div>
+    </div>
+
+    <div class="panel control-panel">
+        <span>⚙️ <b>시스템 컨트롤</b></span>
+        <button class="sys-btn" id="btnPause" onclick="togglePause()">⏸️ 일시중지</button>
+        <button class="sys-btn" style="background:#e74c3c;" onclick="restartGame()">🔄 Restart</button>
+        <button class="sys-btn" onclick="forceNextWave()">⏩ 웨이브 강제</button>
+        <button id="btnDemolish" class="sys-btn" style="background:#7f8c8d;" onclick="toggleDemolish()">🔨 권고사직 (제거)</button>
+    </div>
+
+    <div class="btn-group">
+        <button id="btnRandom" class="active" onclick="selectType('random')" onmouseover="showTowerInfo('random')">🎲 일반 걸즈 랜덤 채용 (60만)</button>
+        <button id="btn10" onclick="selectType(10)" onmouseover="showTowerInfo(10)">✨ 안전·시설 융합 전문가 (20억)</button>
+    </div>
+    
+    <div class="btn-group">
+        <button id="btn6" onclick="selectType(6)" onmouseover="showTowerInfo(6)">💼 소방시설관리사 (20R/3억)</button>
+        <button id="btn7" onclick="selectType(7)" onmouseover="showTowerInfo(7)">👑 산업안전지도사(전기) (20R/4억)</button>
+        <button id="btn8" onclick="selectType(8)" onmouseover="showTowerInfo(8)">⚡🏢 건축전기설비기술사 (30R/8억)</button>
+        <button id="btn9" onclick="selectType(9)" onmouseover="showTowerInfo(9)">🔥 소방기술사 (십자가장판+비례뎀/10억)</button>
+    </div>
+
+    <div class="btn-group">
+        <button id="btnGacha" class="gacha-btn" onclick="selectType('gacha')" onmouseover="showTowerInfo('gacha')">🎲 전체 걸즈 랜덤 채용 (비용: 1억)</button>
+    </div>
+
+    <div id="canvasWrapper">
+        <canvas id="gameCanvas" width="1000" height="500"></canvas>
+        
+        <div id="startOverlay">
+            <h1 style="font-size: 50px; color: #f1c40f; text-shadow: 0 0 10px #f39c12; margin-bottom: 10px; margin-top:0;">🔥 난이도 선택 🔥</h1>
+            <p style="font-size: 18px; color: #bdc3c7; margin-bottom: 40px;">어려울수록 적의 체력과 공격력이 폭발적으로 증가합니다.</p>
+            <div style="display: flex; gap: 20px;">
+                <button class="diff-btn" style="color:#3498db; border-color:#3498db;" onclick="startGame('easy')">쉬움</button>
+                <button class="diff-btn" style="color:white; border-color:white;" onclick="startGame('normal')">보통</button>
+                <button class="diff-btn" style="color:#e67e22; border-color:#e67e22;" onclick="startGame('hard')">어려움</button>
+                <button class="diff-btn" style="color:#e74c3c; border-color:#e74c3c;" onclick="startGame('hell')">헬</button>
+            </div>
+        </div>
+        
+        <div id="clearOverlay"></div>
+    </div>
+
+    <div class="tower-info-table" id="towerInfoBox">
+        <div id="infoContent" style="color:#bdc3c7;">버튼에 마우스를 올리거나 맵의 걸즈를 클릭하면 정보가 표시됩니다.</div>
+    </div>
+
+    <div class="panel skill-panel" style="background: #2c3e50; flex-direction: column; align-items: center;">
+        <div style="display: flex; gap: 10px; width: 100%; justify-content: center; align-items: center;">
+            <span style="color: #f1c40f; font-size: 16px;">✨ <b>엑티브 스킬:</b></span>
+            <button id="skillBtn6" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(6)" onmouseover="showSkillDesc(6)" onmouseout="hideSkillDesc()">💼 종합 정밀점검</button>
+            <button id="skillBtn7" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(7)" onmouseover="showSkillDesc(7)" onmouseout="hideSkillDesc()">👑 방어력 감소</button>
+            <button id="skillBtn8" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(8)" onmouseover="showSkillDesc(8)" onmouseout="hideSkillDesc()">⚡🏢 특급감리 폭주</button>
+            <button id="skillBtn9" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(9)" onmouseover="showSkillDesc(9)" onmouseout="hideSkillDesc()">🔥 소방시설 긴급점검</button>
+            <button id="skillBtn10" class="global-skill-btn" style="display:none; background:#27ae60; border-color:#2ecc71;" onclick="useGlobalSkill(10)" onmouseover="showSkillDesc(10)" onmouseout="hideSkillDesc()">✨ 사신의 지적</button>
+            <span id="noSkillText" style="color: #95a5a6; font-size: 13px;">건설된 상위 자격증이 없습니다.</span>
+        </div>
+        <span id="skillDescText"></span>
+    </div>
+
+    <div class="panel shop-panel">
+        <span>🛒 <b>스펙업 & 뽑기</b></span>
+        <button class="shop-btn" id="btnShopDmg" onclick="buyGlobal('dmg')">전체 딜 +10% (1000만)</button>
+        <button class="shop-btn" id="btnShopRange" onclick="buyGlobal('range')">전체 사거리 +10% (1000만)</button>
+        <button class="shop-btn" id="btnShopDef" style="background:#2ecc71; color:white;" onclick="buyGlobal('def')">방어력 강화 +20% (1000만)</button>
+        <button class="shop-btn" style="background:#e74c3c; color:white; margin-left: 20px; animation: pulse 1.5s infinite;" onclick="playSlotMachine()">🎰 하이리스크 투자 (슬롯)</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const wrapper = document.getElementById('canvasWrapper');
+        const overlay = document.getElementById('clearOverlay');
+        const startOverlay = document.getElementById('startOverlay');
+        const timerText = document.getElementById('playTimer');
+        const infoContent = document.getElementById('infoContent');
+        const skillDescText = document.getElementById('skillDescText');
+        
+        const CELL_SIZE = 50;
+        const COLS = 20; 
+        const ROWS = 10; 
+        
+        let isGameStarted = false;
+        let diffMult = 1.0; 
+        
+        let money = 800; let hp = 20; let frame = 0; let totalPlayFrames = 0; 
+        let gameOver = false; let isPaused = false; let isClearing = false; 
+        let clearCountDown = 300;
+        
+        let globalDmgMulti = 1.0; let globalRangeMulti = 1.0; let globalDefMulti = 1.0; 
+        let costShopDmg = 1000; let costShopRange = 1000; let costShopDef = 1000;
+
+        let isDemolishMode = false; let selectedTower = null; let movingTower = null; 
+        let shakeFrames = 0; let shakeIntensity = 0;
+
+        let enemies = [], enemyBullets = [], towers = [], bullets = [], specialEffects = [], floatingTexts = [], giantTexts = [], reaperEffect = null;
+        let skillCutin = null; 
+        let buildType = 'random'; let mouseX = -100, mouseY = -100; 
+
+        let fusionPairs = []; 
+        let fusionWasPossible = false;
+        let fusionDisplayTimer = 0;
+
+        const waves = [];
+        const bossHPArray = [5000, 25000, 100000, 400000, 1500000]; 
+        const bossReward = [5000, 15000, 40000, 100000, 300000];
+
+        const path = [{x:-50,y:250},{x:850,y:250},{x:850,y:400},{x:150,y:400},{x:150,y:100},{x:1050,y:100}];
+
+        function startGame(difficulty) {
+            // 난이도 30% 추가 증가 (기존 대비 전체적으로 상향)
+            if (difficulty === 'easy') diffMult = 1.56; 
+            else if (difficulty === 'normal') diffMult = 1.872; 
+            else if (difficulty === 'hard') diffMult = 2.4336; 
+            else if (difficulty === 'hell') diffMult = 3.1636; 
+
+            waves.length = 0;
+            for (let i = 1; i <= 50; i++) {
+                if (i % 10 === 0) {
+                    let bIdx = (i / 10) - 1; let bName, bCol;
+                    if (i === 10) { bName = "🏢 10R: 한국OO공단"; bCol = "#00cec9"; }
+                    if (i === 20) { bName = "🚄 20R: 한국OO공사"; bCol = "#0984e3"; }
+                    if (i === 30) { bName = "🏭 30R: 5대 OO공기업"; bCol = "#6c5ce7"; }
+                    if (i === 40) { bName = "⚡ 40R: 한국OO공사"; bCol = "#f1c40f"; }
+                    if (i === 50) { bName = "👑 최종: 한국OO (A매치)"; bCol = "#d63031"; }
+                    let scaledBossHp = bossHPArray[bIdx] * diffMult;
+                    waves.push({ name: bName, hp: scaledBossHp, maxHp: scaledBossHp, speed: 0.6, color: bCol, duration: 1500, isBoss: true, emoji: '👑', reward: bossReward[bIdx], spawnRate: 1500, mType: bIdx });
+                } else {
+                    let wName, wEmoji, wCol, mType;
+                    if (i <= 5) { wName = `웨이브 ${i}: 백수`; wEmoji = "🛌"; wCol = "#bdc3c7"; mType = 0; }
+                    else if (i <= 10) { wName = `웨이브 ${i}: 영세 5인 소기업`; wEmoji = "📦"; wCol = "#d35400"; mType = 1; }
+                    else if (i <= 20) { wName = `웨이브 ${i}: 중소기업`; wEmoji = "👔"; wCol = "#27ae60"; mType = 2; }
+                    else if (i <= 25) { wName = `웨이브 ${i}: 중소기업 (코스닥)`; wEmoji = "👔"; wCol = "#2980b9"; mType = 2; }
+                    else if (i <= 30) { wName = `웨이브 ${i}: 중견기업 (코스닥)`; wEmoji = "👓"; wCol = "#8e44ad"; mType = 3; }
+                    else if (i <= 35) { wName = `웨이브 ${i}: 중견기업 (코스피)`; wEmoji = "👓"; wCol = "#e67e22"; mType = 3; }
+                    else if (i <= 40) { wName = `웨이브 ${i}: 대기업 (코스피)`; wEmoji = "👠"; wCol = "#c0392b"; mType = 4; }
+                    else { wName = `웨이브 ${i}: 대기업 (시총10위)`; wEmoji = "👠"; wCol = "#2c3e50"; mType = 4; }
+                    let spawnR = Math.max(15, 60 - i);
+                    let baseHp = 50 + Math.pow(1.22, i) * 60;
+                    let scaledWaveHp = baseHp * diffMult;
+                    waves.push({ name: wName, hp: scaledWaveHp, maxHp: scaledWaveHp, speed: 1.0 + (i * 0.015), color: wCol, emoji: wEmoji, spawnRate: spawnR, duration: 800, isBoss: false, reward: 20 + i * 5, mType: mType });
+                }
+            }
+            startOverlay.style.display = 'none';
+            isGameStarted = true;
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!isGameStarted || gameOver || isClearing) return;
+                isDemolishMode = false;
+                document.getElementById('btnDemolish').style.background = "#7f8c8d";
+                selectedTower = null;
+                movingTower = null;
+                
+                buildType = 'random';
+                let allBtns = ['btnRandom', 'btn6', 'btn7', 'btn8', 'btn9', 'btn10', 'btnGacha'];
+                allBtns.forEach(id => { let el = document.getElementById(id); if(el) el.classList.remove('active'); });
+                document.getElementById('btnRandom').classList.add('active');
+                
+                resetTowerInfo();
+            }
+        });
+
+        function distToSegment(px, py, x1, y1, x2, y2) {
+            let A = px - x1, B = py - y1, C = x2 - x1, D = y2 - y1;
+            let dot = A * C + B * D;
+            let len_sq = C * C + D * D;
+            let param = -1;
+            if (len_sq != 0) param = dot / len_sq;
+            let xx, yy;
+            if (param < 0) { xx = x1; yy = y1; }
+            else if (param > 1) { xx = x2; yy = y2; }
+            else { xx = x1 + param * C; yy = y1 + param * D; }
+            let dx = px - xx, dy = py - yy;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        function isBuildable(c, r) {
+            if (c < 0 || c >= COLS || r < 0 || r >= ROWS) return false;
+            let cx = c * CELL_SIZE + CELL_SIZE/2;
+            let cy = r * CELL_SIZE + CELL_SIZE/2;
+            let distToPath = 9999;
+            for(let i=0; i<path.length-1; i++) {
+                let p1 = path[i], p2 = path[i+1];
+                let dist = distToSegment(cx, cy, p1.x, p1.y, p2.x, p2.y);
+                if(dist < distToPath) distToPath = dist;
+            }
+            if(distToPath < 35) return false; 
+            return true;
+        }
+
+        let currentWaveIdx = 0; let waveTimer = 0;
+
+        const towerDesc = {
+            0: { title: "⚡ 전깃걸", feature: "단일 츤데레 빔 / 감전 슬로우", limit: "제한 없음" },
+            1: { title: "🧯 소방걸", feature: "열정의 범위 화염 폭사", limit: "제한 없음" },
+            2: { title: "🏗️ 건축걸", feature: "주변 걸즈 멘탈 지속 케어(힐)", limit: "최대 5명" },
+            3: { title: "❄️ 공조걸", feature: "직선 관통 냉동빔 / 극강 빙결", limit: "최대 5명" },
+            4: { title: "💻 정처걸", feature: "코딩 버프 (주변 공속 증가)", limit: "최대 5명" },
+            5: { title: "👷 산안걸", feature: "안전관리비 수금 (자금 확보)", limit: "최대 5명" },
+            6: { title: "💼 소방시설관리사", feature: "세모 폭탄 발사 (적중 시 유도 파편 분열)", limit: "1명 (중복불가)" },
+            7: { title: "👑 산업안전지도사(전기)", feature: "사각형 투척 (적중 시 사방으로 폭발) & 주변 버프 & 자금 확보", limit: "1명 (중복불가)" },
+            8: { title: "⚡🏢 건축전기설비기술사", feature: "노란색 그라데이션 유도 미사일 5개 발사<br><span style='color:#f1c40f'>[패시브: 기술사의 위엄] 주변 300 공속 15% 증가 (중첩 가능)</span>", limit: "1명 (중복불가)" },
+            9: { title: "🔥 소방기술사", feature: "검붉은 십자가 레이저 3개 생성 (3초 지속 장판)<br><span style='color:#f1c40f'>[패시브: 기술사의 위엄] 주변 300 공속 15% 증가 (중첩 가능)</span>", limit: "1명 (중복불가)" },
+            10: { title: "✨ 안전·시설 융합 전문가", feature: "수직 검녹색 4줄기 레이저 타격<br><span style='color:#2ecc71'>[패시브: 전문직 2개의 위엄] 주변 300 공속 15% 증가 (중첩 가능)</span>", limit: "1명 (중복불가/융합가능)" },
+            'random': { title: "🎲 일반 랜덤 채용", feature: "전깃걸~산안걸 중 1명이 무작위 등장<br><span style='color:#f1c40f'>✨황금(3%)</span> <span style='color:#9b59b6'>🌟반전(10%)</span>", limit: "60만 소모 / 칸 단위 배치" },
+            'gacha': { title: "🎲 전체 걸즈 랜덤 채용", feature: "95% 일반, 5% 상위 걸즈 등장.<br><span style='color:#f1c40f'>✨황금(3%)</span> <span style='color:#9b59b6'>🌟반전(10%)</span>", limit: "1억 원 소모" }
+        };
+
+        const skillDesc = {
+            6: "[종합 정밀 점검]: 범위 내(300) 적들에게 기본 데미지의 3배 폭격 피해를 입힙니다. (쿨타임 15초)",
+            7: "[위험구역 설정]: 범위 내 적들의 방어력을 50% 감소시켜 10초간 모든 피해를 2배로 받게 합니다. (쿨타임 15초)",
+            8: "[특급 감리 전기 선임]: 30초 동안 공격 속도/데미지가 5배가 되며 적 이동속도를 90% 감소시키는 폭주 모드. 다중 검노랑 레이저로 공격합니다. (쿨타임 45초)",
+            9: "[소방시설 긴급점검]: 5초간 몬스터 전체 이속 80% 감소 및 현재 체력 10%를 깎는 화염 미사일 3발 투하. (쿨타임 15초)",
+            10: "[사신의 지적]: 거대한 안전모 쓴 사신이 적들을 지적하여 전체 적 체력을 40% 감소시키고 3초 스턴을 부여합니다. (쿨타임 30초)"
+        };
+
+        const towerStats = [
+            [{ name: "견습", cost: 60, range: 100, dmg: 15, cd: 30, color: "#00b894", type: "attack" }, { name: "정직원", cost: 300, range: 150, dmg: 80, cd: 20, color: "#0984e3", type: "attack", slow: 0.2 }, { name: "팀장", cost: 1000, range: 250, dmg: 400, cd: 15, color: "#fbc531", type: "attack", slow: 0.6 }],
+            [{ name: "견습", cost: 60, range: 120, dmg: 10, cd: 40, color: "#e17055", type: "attack" }, { name: "베테랑", cost: 500, range: 250, dmg: 150, cd: 60, color: "#ff7675", type: "aoe" }],
+            [{ name: "견습", cost: 60, range: 120, heal: 20, healCd: 60, color: "#f39c12", type: "aura_heal" }, { name: "차장", cost: 300, range: 200, heal: 40, healCd: 60, color: "#d35400", type: "aura_heal" }], 
+            [{ name: "견습", cost: 60, range: 150, dmg: 25, cd: 60, color: "#00cec9", type: "pierce" }, { name: "과장", cost: 350, range: 220, dmg: 150, cd: 50, color: "#74b9ff", type: "pierce" }],
+            [{ name: "인턴", cost: 60, range: 120, buff: 0.3, cd: 0, color: "#3498db", type: "aura_spd" }, { name: "대리", cost: 120, range: 180, buff: 0.4, cd: 0, color: "#1abc9c", type: "aura_spd" }], 
+            [{ name: "견습", cost: 60, range: 0, income: 10, cd: 180, color: "#95a5a6", type: "income" }, { name: "부장", cost: 250, range: 0, income: 80, cd: 150, color: "#bdc3c7", type: "income" }],
+            [{ name: "합격", cost: 30000, range: 250, dmg: 350, cd: 45, color: "#e84393", type: "triangle_bomb" }], 
+            [{ name: "개업", cost: 40000, range: 250, buff: 2.8, income: 560, dmg: 1200, cd: 80, color: "#d63031", type: "square_bomb" }], 
+            [{ name: "선임", cost: 80000, range: 300, dmg: 4000, cd: 40, color: "#fbc531", type: "tech_missile" }], 
+            [{ name: "선임", cost: 100000, range: 1200, dmg: 45000, cd: 120, color: "#eb4d4b", type: "cross_laser" }],
+            [{ name: "마스터", cost: 200000, range: 350, dmg: 54000, cd: 35, color: "#2ecc71", type: "elite_vertical_laser" }] 
+        ];
+
+        const icons = ['⚡', '🧯', '🏗️', '❄️', '💻', '👷', '💼', '👑', '⚡🏢', '🔥', '✨'];
+
+        function invertColor(hex) {
+            if(hex.indexOf('#') === 0) hex = hex.slice(1);
+            if(hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+            let r = (255 - parseInt(hex.slice(0, 2), 16)).toString(16).padStart(2,'0');
+            let g = (255 - parseInt(hex.slice(2, 4), 16)).toString(16).padStart(2,'0');
+            let b = (255 - parseInt(hex.slice(4, 6), 16)).toString(16).padStart(2,'0');
+            return '#' + r + g + b;
+        }
+
+        function drawCuteGirl(ctx, x, y, type, frame, rType, taunt, isAttacking, isPointing = false) {
+            ctx.save();
+            ctx.translate(x, y);
+            
+            let bob = Math.sin(frame * 0.15) * 1.5; 
+            let hairBob = Math.sin(frame * 0.1) * 2.5; 
+
+            if (isAttacking && !isPointing) {
+                ctx.translate(3, -2); ctx.rotate(0.1); bob = 0; 
+            }
+            
+            let isSitting = !isAttacking && !isPointing && (type === 2 || type === 4);
+            let sitOffsetY = isSitting ? 5 : 0;
+
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath(); ctx.ellipse(0, 16, 12, 3, 0, 0, Math.PI*2); ctx.fill();
+
+            if(taunt > 0 && !isPointing) { ctx.strokeStyle = 'red'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -15, 25, 0, Math.PI*2); ctx.stroke(); }
+
+            let tColor = towerStats[type][0].color;
+            if(rType === 1) tColor = invertColor(tColor); 
+
+            // 머리카락
+            ctx.fillStyle = (type === 10) ? "#2c3e50" : tColor; 
+            if (type === 0 || type === 8) { 
+                ctx.beginPath(); ctx.moveTo(-15, -5+bob+sitOffsetY); ctx.lineTo(-20, -15+bob+sitOffsetY); ctx.lineTo(-10, -8+bob+sitOffsetY); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(15, -5+bob+sitOffsetY); ctx.lineTo(20, -15+bob+sitOffsetY); ctx.lineTo(10, -8+bob+sitOffsetY); ctx.fill();
+            } else if (type === 1 || type === 9) { 
+                ctx.beginPath(); ctx.moveTo(-5, -15+bob+sitOffsetY); ctx.lineTo(-15, -5+hairBob+sitOffsetY); ctx.lineTo(0, -5+bob+sitOffsetY); ctx.fill();
+            } else if (type === 3) { 
+                ctx.beginPath(); ctx.moveTo(-8, -13+bob+sitOffsetY); ctx.quadraticCurveTo(-22, -5+hairBob+sitOffsetY, -18, 12+hairBob+sitOffsetY); ctx.quadraticCurveTo(-12, 0+bob+sitOffsetY, -8, -8+bob+sitOffsetY); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(8, -13+bob+sitOffsetY); ctx.quadraticCurveTo(22, -5+hairBob+sitOffsetY, 18, 12+hairBob+sitOffsetY); ctx.quadraticCurveTo(12, 0+bob+sitOffsetY, 8, -8+bob+sitOffsetY); ctx.fill();
+            } else if (type === 4 || type === 7) { 
+                ctx.beginPath(); ctx.moveTo(-10, -10+bob+sitOffsetY); ctx.quadraticCurveTo(-15, 5+hairBob+sitOffsetY, -10, 15+bob+sitOffsetY); ctx.quadraticCurveTo(-5, 5+hairBob+sitOffsetY, -8, -10+bob+sitOffsetY); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(10, -10+bob+sitOffsetY); ctx.quadraticCurveTo(15, 5+hairBob+sitOffsetY, 10, 15+bob+sitOffsetY); ctx.quadraticCurveTo(5, 5+hairBob+sitOffsetY, 8, -10+bob+sitOffsetY); ctx.fill();
+            } else if (type === 10) { 
+                ctx.beginPath(); ctx.moveTo(-8, -10+bob+sitOffsetY); ctx.quadraticCurveTo(-25, 0+hairBob+sitOffsetY, -15, 20+hairBob+sitOffsetY); ctx.quadraticCurveTo(-10, 5+bob+sitOffsetY, -8, -5+bob+sitOffsetY); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(8, -10+bob+sitOffsetY); ctx.quadraticCurveTo(25, 0+hairBob+sitOffsetY, 15, 20+hairBob+sitOffsetY); ctx.quadraticCurveTo(10, 5+bob+sitOffsetY, 8, -5+bob+sitOffsetY); ctx.fill();
+            } else if (type === 6) { 
+                ctx.beginPath(); ctx.moveTo(-12, -10+bob+sitOffsetY); ctx.lineTo(12, -10+bob+sitOffsetY); ctx.lineTo(15, 12+bob+sitOffsetY); ctx.lineTo(-15, 12+bob+sitOffsetY); ctx.fill();
+            } else { 
+                ctx.beginPath(); ctx.arc(0, -14+bob+sitOffsetY, 14, 0, Math.PI*2); ctx.fill();
+            }
+
+            // 하의 및 상의
+            if (type === 10) {
+                ctx.fillStyle = "#ffffff";
+                ctx.beginPath(); ctx.moveTo(-8, 2+bob+sitOffsetY); ctx.lineTo(8, 2+bob+sitOffsetY); ctx.lineTo(16, 18+bob+sitOffsetY); ctx.lineTo(-16, 18+bob+sitOffsetY); ctx.fill();
+                ctx.strokeStyle = "#f1c40f"; ctx.lineWidth = 2; ctx.stroke();
+                ctx.fillStyle = "#2ecc71"; ctx.fillRect(-6, -6+bob+sitOffsetY, 12, 8);
+                ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(-2, -6+bob+sitOffsetY); ctx.lineTo(2, -6+bob+sitOffsetY); ctx.lineTo(0, 1+bob+sitOffsetY); ctx.fill();
+            } else {
+                if (type === 1 || type === 2 || type === 5 || type === 8) { 
+                    ctx.fillStyle = (type >= 8) ? "#34495e" : tColor; 
+                    if(isSitting) {
+                        ctx.beginPath(); ctx.arc(0, 8+bob+sitOffsetY, 8, 0, Math.PI); ctx.fill(); 
+                    } else {
+                        ctx.fillRect(-7, 2+bob+sitOffsetY, 14, 10);
+                    }
+                } else if (type === 6 || type === 7) { 
+                    ctx.fillStyle = (type === 7) ? "#c0392b" : "#2c3e50";
+                    ctx.beginPath(); ctx.moveTo(-6, 2+bob+sitOffsetY); ctx.lineTo(6, 2+bob+sitOffsetY); ctx.lineTo(12, 14+bob+sitOffsetY); ctx.lineTo(-12, 14+bob+sitOffsetY); ctx.fill();
+                } else { 
+                    ctx.fillStyle = "#2d3436";
+                    if(isSitting) {
+                        ctx.beginPath(); ctx.arc(0, 8+bob+sitOffsetY, 7, 0, Math.PI); ctx.fill();
+                    } else {
+                        ctx.beginPath(); ctx.moveTo(-6, 2+bob+sitOffsetY); ctx.lineTo(6, 2+bob+sitOffsetY); ctx.lineTo(9, 8+bob+sitOffsetY); ctx.lineTo(-9, 8+bob+sitOffsetY); ctx.fill();
+                    }
+                }
+                
+                ctx.fillStyle = (type === 6 || type >= 8) ? "#bdc3c7" : "#ecf0f1"; 
+                ctx.fillRect(-6, -6+bob+sitOffsetY, 12, 8);
+                ctx.fillStyle = tColor; ctx.beginPath(); ctx.moveTo(-1, -6+bob+sitOffsetY); ctx.lineTo(1, -6+bob+sitOffsetY); ctx.lineTo(0, 1+bob+sitOffsetY); ctx.fill(); 
+            }
+
+            // 다리
+            ctx.fillStyle = "#ffeaa7";
+            if (isSitting) {
+                ctx.beginPath(); ctx.ellipse(-4, 11+bob+sitOffsetY, 5, 2, Math.PI/4, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(4, 11+bob+sitOffsetY, 5, 2, -Math.PI/4, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "#2d3436"; 
+                ctx.beginPath(); ctx.arc(-5, 12+bob+sitOffsetY, 2.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5, 12+bob+sitOffsetY, 2.5, 0, Math.PI*2); ctx.fill();
+            } else {
+                ctx.fillRect(-5, 8+bob+sitOffsetY, 3, 8); ctx.fillRect(2, 8+bob+sitOffsetY, 3, 8);
+                ctx.fillStyle = "#2d3436"; ctx.fillRect(-5.5, 12+bob+sitOffsetY, 4, 5); ctx.fillRect(1.5, 12+bob+sitOffsetY, 4, 5);
+            }
+
+            // 팔 및 모션
+            if (isPointing) {
+                ctx.fillStyle = "#2d3436";
+                ctx.fillRect(-8, -5+bob+sitOffsetY, 3, 6);
+                ctx.fillStyle = "#ffeaa7";
+                ctx.fillRect(-8, 1+bob+sitOffsetY, 3, 2);
+
+                let armColor = (type === 10) ? "#ffffff" : ((type === 6 || type >= 8) ? "#bdc3c7" : "#ecf0f1");
+                ctx.fillStyle = armColor;
+                ctx.save();
+                ctx.translate(4, -4+bob+sitOffsetY);
+                ctx.rotate(-0.6); 
+                ctx.fillRect(0, -1, 16, 5); 
+                ctx.fillStyle = "#ffeaa7";
+                ctx.beginPath(); ctx.arc(16, 1.5, 2.5, 0, Math.PI*2); ctx.fill(); 
+                ctx.fillRect(17, 0.5, 5, 2); 
+                ctx.restore();
+            } else if (isAttacking) {
+                ctx.fillStyle = "#2d3436"; ctx.fillRect(2, -5+bob+sitOffsetY, 10, 3); 
+                ctx.fillStyle = "#ffeaa7"; ctx.fillRect(12, -5+bob+sitOffsetY, 3, 3);
+                if (type === 10) {
+                    ctx.strokeStyle = "#f1c40f"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(14, -4+bob+sitOffsetY); ctx.lineTo(24, -14+bob+sitOffsetY); ctx.stroke(); 
+                    ctx.fillStyle = "#1abc9c"; ctx.beginPath(); ctx.arc(24, -14+bob+sitOffsetY, 3, 0, Math.PI*2); ctx.fill();
+                } else if(type === 4) { 
+                    ctx.fillStyle = "gray"; ctx.fillRect(8, -2+bob+sitOffsetY, 8, 4);
+                } else {
+                    ctx.fillStyle = "white"; ctx.font = "bold 14px Arial"; ctx.fillText(icons[type], 18, 0+bob+sitOffsetY);
+                }
+            } else {
+                ctx.fillStyle = "#2d3436";
+                if(isSitting) {
+                    ctx.save(); ctx.translate(-6, -3+bob+sitOffsetY); ctx.rotate(0.5); ctx.fillRect(0, 0, 3, 7); ctx.restore();
+                    ctx.save(); ctx.translate(6, -3+bob+sitOffsetY); ctx.rotate(-0.5); ctx.fillRect(-3, 0, 3, 7); ctx.restore();
+                    ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-9, 3+bob+sitOffsetY, 3, 3); ctx.fillRect(6, 3+bob+sitOffsetY, 3, 3);
+                } else {
+                    if (type === 0) {
+                        let kick = Math.sin(frame * 0.5) > 0 ? 2 : 0;
+                        ctx.fillRect(-8, -5+bob+sitOffsetY, 3, 6); ctx.fillRect(5, -5+bob+sitOffsetY-kick, 3, 6);
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-8, 1+bob+sitOffsetY, 3, 2); ctx.fillRect(5, 1+bob+sitOffsetY-kick, 3, 2);
+                    } else if (type === 1) { 
+                        let stretch = Math.cos(frame * 0.1);
+                        ctx.save(); ctx.translate(-6, -3+bob+sitOffsetY); ctx.rotate(-0.5 + stretch*0.3); ctx.fillRect(0, 0, 8, 3); ctx.restore();
+                        ctx.save(); ctx.translate(6, -3+bob+sitOffsetY); ctx.rotate(0.5 - stretch*0.3); ctx.fillRect(-8, 0, 8, 3); ctx.restore();
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-8, -4+bob+sitOffsetY, 2, 2); ctx.fillRect(6, -4+bob+sitOffsetY, 2, 2);
+                    } else if (type === 3) { 
+                        let shiver = Math.sin(frame * 0.8) * 1.5;
+                        ctx.save(); ctx.translate(-6+shiver, -3+bob+sitOffsetY); ctx.rotate(-0.8); ctx.fillRect(0, 0, 8, 3); ctx.restore();
+                        ctx.save(); ctx.translate(6+shiver, -3+bob+sitOffsetY); ctx.rotate(0.8); ctx.fillRect(-8, 0, 8, 3); ctx.restore();
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-4+shiver, -1+bob+sitOffsetY, 2, 2); ctx.fillRect(2+shiver, -1+bob+sitOffsetY, 2, 2);
+                    } else if (type === 5) { 
+                        ctx.fillRect(-8, -5+bob+sitOffsetY, 3, 6);
+                        ctx.save(); ctx.translate(6, -3+bob+sitOffsetY); ctx.rotate(-2.0); ctx.fillRect(0, 0, 8, 3); ctx.restore();
+                        ctx.fillStyle = "white"; ctx.fillRect(5, -7+bob+sitOffsetY, 4, 5); 
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-8, 1+bob+sitOffsetY, 3, 2); ctx.fillRect(4, -9+bob+sitOffsetY, 2, 2);
+                    } else if (type === 6) { 
+                        ctx.fillRect(-8, -5+bob+sitOffsetY, 3, 6);
+                        let sweep = Math.sin(frame*0.1);
+                        ctx.save(); ctx.translate(6, -3+bob+sitOffsetY); ctx.rotate(-2.0 + sweep*0.5); ctx.fillRect(0, 0, 8, 3); ctx.restore();
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-8, 1+bob+sitOffsetY, 3, 2); ctx.fillRect(2+sweep, -10+bob+sitOffsetY, 3, 3);
+                    } else if (type === 7) { 
+                        let tap = (frame % 30 < 15) ? 0 : 2;
+                        ctx.fillRect(-8, -5+bob+sitOffsetY, 3, 6);
+                        ctx.save(); ctx.translate(6, -3+bob+sitOffsetY); ctx.rotate(-1.0 + tap*0.1); ctx.fillRect(0, 0, 8, 3); ctx.restore();
+                        ctx.fillStyle = "white"; ctx.fillRect(10, -8+bob+sitOffsetY-tap, 1, 8); 
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-8, 1+bob+sitOffsetY, 3, 2); ctx.fillRect(7, -6+bob+sitOffsetY-tap, 3, 3);
+                    } else if (type === 8 || type === 10) { 
+                        ctx.save(); ctx.translate(-5, -2+bob+sitOffsetY); ctx.rotate(-0.5); ctx.fillRect(0, 0, 8, 3); ctx.restore();
+                        ctx.save(); ctx.translate(5, -2+bob+sitOffsetY); ctx.rotate(0.5); ctx.fillRect(-8, 0, 8, 3); ctx.restore();
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-3, -1+bob+sitOffsetY, 2, 2); ctx.fillRect(1, -1+bob+sitOffsetY, 2, 2);
+                        if(type === 10) {
+                            ctx.strokeStyle = "#f1c40f"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(-6, -1+bob+sitOffsetY); ctx.lineTo(-14, 8+bob+sitOffsetY); ctx.stroke();
+                            ctx.fillStyle = "#1abc9c"; ctx.beginPath(); ctx.arc(-14, 8+bob+sitOffsetY, 3, 0, Math.PI*2); ctx.fill();
+                        }
+                    } else if (type === 9) { 
+                        ctx.save(); ctx.translate(-6, -3+bob+sitOffsetY); ctx.rotate(-0.5); ctx.fillRect(0, 0, 10, 3); ctx.restore();
+                        ctx.save(); ctx.translate(6, -3+bob+sitOffsetY); ctx.rotate(0.5); ctx.fillRect(-10, 0, 10, 3); ctx.restore();
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-2, -2+bob+sitOffsetY, 2, 2); ctx.fillRect(0, -2+bob+sitOffsetY, 2, 2);
+                    } else {
+                        ctx.fillRect(-8, -5+bob+sitOffsetY, 3, 6); ctx.fillRect(5, -5+bob+sitOffsetY, 3, 6); 
+                        ctx.fillStyle = "#ffeaa7"; ctx.fillRect(-8, 1+bob+sitOffsetY, 3, 2); ctx.fillRect(5, 1+bob+sitOffsetY, 3, 2); 
+                    }
+                }
+            }
+
+            // 얼굴
+            ctx.fillStyle = "#ffeaa7";
+            ctx.beginPath(); ctx.arc(0, -11 + bob + sitOffsetY, 8, 0, Math.PI*2); ctx.fill();
+
+            // 눈
+            ctx.fillStyle = "#2d3436";
+            if (isPointing) { 
+                ctx.beginPath(); ctx.moveTo(-6, -13+bob+sitOffsetY); ctx.lineTo(-1, -10+bob+sitOffsetY); ctx.lineTo(-6, -11+bob+sitOffsetY); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(6, -13+bob+sitOffsetY); ctx.lineTo(1, -10+bob+sitOffsetY); ctx.lineTo(6, -11+bob+sitOffsetY); ctx.fill();
+            } else if (isAttacking && (type === 0 || type >= 8)) { 
+                ctx.font = "bold 8px Arial"; ctx.fillText(">", -4, -9+bob+sitOffsetY); ctx.fillText("<", 4, -9+bob+sitOffsetY);
+            } else if (isSitting) {
+                ctx.beginPath(); ctx.arc(-3, -11+bob+sitOffsetY, 2, 0, Math.PI, false); ctx.stroke();
+                ctx.beginPath(); ctx.arc(3, -11+bob+sitOffsetY, 2, 0, Math.PI, false); ctx.stroke();
+            } else {
+                ctx.beginPath(); ctx.ellipse(-3, -12+bob+sitOffsetY, 1.5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(3, -12+bob+sitOffsetY, 1.5, 2.5, 0, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = "white";
+                ctx.beginPath(); ctx.arc(-3.5, -13+bob+sitOffsetY, 0.8, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(2.5, -13+bob+sitOffsetY, 0.8, 0, Math.PI*2); ctx.fill();
+            }
+
+            // 볼터치
+            ctx.fillStyle = "rgba(255, 118, 117, 0.6)";
+            ctx.beginPath(); ctx.arc(-5, -9+bob+sitOffsetY, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(5, -9+bob+sitOffsetY, 2, 0, Math.PI*2); ctx.fill();
+            
+            // 입
+            ctx.strokeStyle = "#b33939"; ctx.lineWidth = 1;
+            if (isPointing) {
+                ctx.fillStyle = "#b33939"; ctx.beginPath(); ctx.arc(0, -7+bob+sitOffsetY, 3, 0, Math.PI); ctx.fill();
+            } else if (isAttacking) { 
+                ctx.beginPath(); ctx.arc(0, -8+bob+sitOffsetY, 2, 0, Math.PI); ctx.stroke(); 
+            } else { 
+                ctx.beginPath(); ctx.arc(0, -8+bob+sitOffsetY, 1.5, 0.2, Math.PI-0.2); ctx.stroke(); 
+            }
+
+            // 앞머리
+            ctx.fillStyle = (type === 10) ? "#2c3e50" : tColor; 
+            ctx.beginPath(); ctx.arc(0, -12+bob+sitOffsetY, 8.5, Math.PI, Math.PI*2);
+            ctx.lineTo(6, -9+bob+sitOffsetY); ctx.lineTo(3, -11+bob+sitOffsetY); ctx.lineTo(0, -8+bob+sitOffsetY); ctx.lineTo(-3, -11+bob+sitOffsetY); ctx.lineTo(-6, -9+bob+sitOffsetY); ctx.fill();
+
+            // 악세사리
+            if (type === 0 || type === 8) { ctx.fillStyle = "yellow"; ctx.fillRect(5, -22+bob+sitOffsetY, 3, 5); } 
+            else if (type === 1 || type === 9) { ctx.fillStyle = "#e17055"; ctx.beginPath(); ctx.arc(0, -20+bob+sitOffsetY, 6, Math.PI, 0); ctx.fill(); } 
+            else if (type === 2 || type === 5) { ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(0, -20+bob+sitOffsetY, 6, Math.PI, 0); ctx.fill(); } 
+            else if (type === 4) { ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-11, -12+bob+sitOffsetY); ctx.lineTo(11, -12+bob+sitOffsetY); ctx.stroke(); } 
+            else if (type === 6) { ctx.fillStyle = "#34495e"; ctx.fillRect(-12, 2+bob+sitOffsetY, 6, 8); } 
+            else if (type === 7) { ctx.fillStyle = "gold"; ctx.beginPath(); ctx.moveTo(-6, -22+bob+sitOffsetY); ctx.lineTo(-3, -28+bob+sitOffsetY); ctx.lineTo(0, -23+bob+sitOffsetY); ctx.lineTo(3, -28+bob+sitOffsetY); ctx.lineTo(6, -22+bob+sitOffsetY); ctx.fill(); } 
+            else if (type === 10) { 
+                ctx.fillStyle = "gold"; ctx.beginPath(); ctx.moveTo(-6, -18+bob+sitOffsetY); ctx.lineTo(-4, -25+bob+sitOffsetY); ctx.lineTo(0, -18+bob+sitOffsetY); ctx.lineTo(4, -25+bob+sitOffsetY); ctx.lineTo(6, -18+bob+sitOffsetY); ctx.fill(); 
+                ctx.fillStyle = "cyan"; ctx.beginPath(); ctx.arc(0, -21+bob+sitOffsetY, 1.5, 0, Math.PI*2); ctx.fill(); 
+            }
+            
+            if (type === 10 && Math.random() < 0.3) {
+                let sx = (Math.random()-0.5)*40; let sy = (Math.random()-0.5)*40;
+                ctx.fillStyle = "white"; ctx.fillRect(sx, sy, 2, 2);
+            }
+
+            ctx.restore();
+        }
+
+        // === 💖 몬스터 걸즈 (황금/반전 최적화) ===
+        function drawMonsterGirl(ctx, x, y, mType, isBoss, frame, hpRatio, defDebuff, rType) {
+            ctx.save();
+            ctx.translate(x, y);
+            let scale = isBoss ? 1.5 : 1.0;
+            ctx.scale(scale, scale);
+            
+            let bob = Math.sin(frame * 0.15) * 1.5; 
+            let hairBob = Math.sin(frame * 0.1) * 2.5; 
+            if (isBoss) bob *= 1.2;
+
+            ctx.fillStyle = "rgba(0,0,0,0.2)";
+            ctx.beginPath(); ctx.ellipse(0, 16, 12, 3, 0, 0, Math.PI*2); ctx.fill();
+
+            if (rType === 2) {
+                let grad = ctx.createRadialGradient(0, -5, 5, 0, -5, 30);
+                grad.addColorStop(0, "rgba(241, 196, 15, 0.6)");
+                grad.addColorStop(1, "rgba(241, 196, 15, 0)");
+                ctx.fillStyle = grad;
+                ctx.beginPath(); ctx.arc(0, -5, 30, 0, Math.PI*2); ctx.fill();
+            }
+
+            let isInv = (rType === 1);
+            let hColor = ["#7f8c8d", "#e67e22", "#27ae60", "#8e44ad", "#e84393"][mType] || "#2c3e50";
+            if (isBoss) hColor = "#2c3e50"; 
+            if (rType === 2) hColor = "#f39c12"; 
+            if (isInv) hColor = invertColor(hColor); 
+
+            let skinColor = isInv ? "#a29bfe" : "#ffeaa7"; 
+            let eyeColor = isInv ? "#ffeaa7" : "#2d3436";
+
+            // 머리카락
+            ctx.fillStyle = hColor;
+            if (mType === 0) { 
+                ctx.beginPath(); ctx.arc(0, -12+bob, 15, 0, Math.PI*2); ctx.fill();
+            } else if (mType === 1 || mType === 2) { 
+                ctx.beginPath(); ctx.arc(0, -14+bob, 14, 0, Math.PI*2); ctx.fill();
+            } else if (mType === 3) { 
+                ctx.beginPath(); ctx.moveTo(-12, -10+bob); ctx.lineTo(12, -10+bob); ctx.lineTo(15, 12+hairBob); ctx.lineTo(-15, 12+hairBob); ctx.fill();
+            } else { 
+                ctx.beginPath(); ctx.moveTo(-8, -10+bob); ctx.quadraticCurveTo(-25, 0+hairBob, -15, 20+hairBob); ctx.quadraticCurveTo(-10, 5+bob, -8, -5+bob); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(8, -10+bob); ctx.quadraticCurveTo(25, 0+hairBob, 15, 20+hairBob); ctx.quadraticCurveTo(10, 5+bob, 8, -5+bob); ctx.fill();
+            }
+
+            // 옷
+            if (mType === 0) { 
+                ctx.fillStyle = isInv ? invertColor("#bdc3c7") : "#bdc3c7"; ctx.fillRect(-7, -6+bob, 14, 12);
+                ctx.fillStyle = isInv ? invertColor("#95a5a6") : "#95a5a6"; ctx.fillRect(-7, 4+bob, 14, 4);
+            } else if (mType === 1) { 
+                ctx.fillStyle = isInv ? invertColor("#d35400") : "#d35400"; ctx.fillRect(-6, -6+bob, 12, 8);
+                ctx.fillStyle = isInv ? invertColor("#2d3436") : "#2d3436"; ctx.fillRect(-7, 2+bob, 14, 8);
+            } else if (mType === 2) { 
+                ctx.fillStyle = isInv ? invertColor("#ecf0f1") : "#ecf0f1"; ctx.fillRect(-6, -6+bob, 12, 8);
+                ctx.fillStyle = isInv ? invertColor("#2ecc71") : "#2ecc71"; ctx.beginPath(); ctx.moveTo(-2, -6+bob); ctx.lineTo(2, -6+bob); ctx.lineTo(0, 2+bob); ctx.fill(); 
+                ctx.fillStyle = isInv ? invertColor("#27ae60") : "#27ae60"; ctx.fillRect(-6, 2+bob, 12, 8); 
+            } else if (mType === 3) { 
+                ctx.fillStyle = isInv ? invertColor("#ffffff") : "#ffffff"; ctx.fillRect(-6, -6+bob, 12, 8);
+                ctx.fillStyle = isInv ? invertColor("#9b59b6") : "#9b59b6"; ctx.beginPath(); ctx.moveTo(-6, 2+bob); ctx.lineTo(6, 2+bob); ctx.lineTo(9, 12+bob); ctx.lineTo(-9, 12+bob); ctx.fill();
+            } else { 
+                ctx.fillStyle = isInv ? invertColor("#e74c3c") : "#e74c3c"; ctx.fillRect(-6, -6+bob, 12, 8);
+                ctx.beginPath(); ctx.moveTo(-6, 2+bob); ctx.lineTo(6, 2+bob); ctx.lineTo(12, 16+bob); ctx.lineTo(-12, 16+bob); ctx.fill();
+                if (isBoss) {
+                    ctx.fillStyle = isInv ? invertColor("#2c3e50") : "#2c3e50"; 
+                    ctx.beginPath(); ctx.moveTo(-10, -6+bob); ctx.lineTo(10, -6+bob); ctx.lineTo(18, 18+bob); ctx.lineTo(-18, 18+bob); ctx.fill();
+                    ctx.fillStyle = isInv ? invertColor("#e74c3c") : "#e74c3c"; ctx.fillRect(-6, -6+bob, 12, 8);
+                    ctx.beginPath(); ctx.moveTo(-6, 2+bob); ctx.lineTo(6, 2+bob); ctx.lineTo(12, 16+bob); ctx.lineTo(-12, 16+bob); ctx.fill();
+                }
+            }
+
+            ctx.fillStyle = skinColor; ctx.fillRect(-5, 8+bob, 3, 8); ctx.fillRect(2, 8+bob, 3, 8);
+            ctx.fillStyle = isInv ? invertColor("#2d3436") : "#2d3436"; ctx.fillRect(-5.5, 12+bob, 4, 5); ctx.fillRect(1.5, 12+bob, 4, 5);
+
+            // 팔
+            let armColor = (mType === 0) ? "#95a5a6" : ((mType === 1) ? "#d35400" : ((mType === 2) ? "#ecf0f1" : ((mType === 3) ? "#ffffff" : "#e74c3c")));
+            ctx.fillStyle = isInv ? invertColor(armColor) : armColor;
+            ctx.fillRect(-8, -5+bob, 3, 6); ctx.fillRect(5, -5+bob, 3, 6);
+            ctx.fillStyle = skinColor; ctx.fillRect(-8, 1+bob, 3, 2); ctx.fillRect(5, 1+bob, 3, 2);
+
+            // 소기업 상자
+            if (mType === 1 && !isBoss) { 
+                ctx.fillStyle = isInv ? invertColor("#cd6133") : "#cd6133"; ctx.fillRect(-6, -2+bob, 12, 10); 
+                ctx.strokeStyle = isInv ? invertColor("#a04000") : "#a04000"; ctx.lineWidth=1; ctx.strokeRect(-6, -2+bob, 12, 10);
+            }
+
+            // 얼굴
+            ctx.fillStyle = skinColor;
+            ctx.beginPath(); ctx.arc(0, -11 + bob, 8, 0, Math.PI*2); ctx.fill();
+
+            // 눈
+            ctx.fillStyle = eyeColor;
+            if (mType === 0) { 
+                ctx.fillRect(-5, -12+bob, 3, 1); ctx.fillRect(2, -12+bob, 3, 1);
+                ctx.fillStyle = isInv ? invertColor("#74b9ff") : "#74b9ff"; ctx.fillRect(2, -8+bob, 1, 3); 
+            } else if (mType === 1) { 
+                ctx.strokeStyle = eyeColor;
+                ctx.beginPath(); ctx.arc(-3, -11+bob, 2, 0, Math.PI, true); ctx.stroke();
+                ctx.beginPath(); ctx.arc(3, -11+bob, 2, 0, Math.PI, true); ctx.stroke();
+                ctx.fillStyle = isInv ? invertColor("#74b9ff") : "#74b9ff"; ctx.fillRect(-4, -9+bob, 2, 3);
+            } else if (mType === 2) { 
+                ctx.beginPath(); ctx.arc(-3, -12+bob, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(3, -12+bob, 1.5, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = isInv ? "rgba(255,255,255,0.3)" : "rgba(0,0,0,0.3)"; 
+                ctx.beginPath(); ctx.arc(-3, -11+bob, 2.5, 0, Math.PI); ctx.fill(); ctx.arc(3, -11+bob, 2.5, 0, Math.PI); ctx.fill();
+            } else if (mType === 3) { 
+                ctx.fillRect(-4, -12+bob, 2, 2); ctx.fillRect(2, -12+bob, 2, 2);
+                ctx.strokeStyle = isInv ? "rgba(0,0,0,0.8)" : "rgba(255,255,255,0.8)"; ctx.lineWidth=1; 
+                ctx.strokeRect(-6, -14+bob, 5, 4); ctx.strokeRect(1, -14+bob, 5, 4);
+                ctx.beginPath(); ctx.moveTo(-1, -12+bob); ctx.lineTo(1, -12+bob); ctx.stroke();
+            } else { 
+                ctx.strokeStyle = eyeColor;
+                ctx.beginPath(); ctx.arc(-3, -10+bob, 2, 0, Math.PI, true); ctx.stroke();
+                ctx.beginPath(); ctx.arc(3, -10+bob, 2, 0, Math.PI, true); ctx.stroke();
+                ctx.fillStyle = eyeColor; ctx.beginPath(); ctx.arc(-3, -11+bob, 1, 0, Math.PI*2); ctx.fill(); ctx.arc(3, -11+bob, 1, 0, Math.PI*2); ctx.fill();
+            }
+
+            // 볼터치
+            ctx.fillStyle = isInv ? "rgba(0, 137, 138, 0.6)" : "rgba(255, 118, 117, 0.6)";
+            ctx.beginPath(); ctx.arc(-5, -9+bob, 2, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(5, -9+bob, 2, 0, Math.PI*2); ctx.fill();
+
+            // 입
+            ctx.strokeStyle = isInv ? invertColor("#b33939") : "#b33939"; ctx.lineWidth = 1;
+            if (mType === 0 || mType === 1) { ctx.beginPath(); ctx.arc(0, -7+bob, 1.5, 0, Math.PI, true); ctx.stroke(); } 
+            else { ctx.beginPath(); ctx.arc(0, -8+bob, 1.5, 0.2, Math.PI-0.2); ctx.stroke(); } 
+
+            // 앞머리
+            ctx.fillStyle = hColor; 
+            ctx.beginPath(); ctx.arc(0, -12+bob, 8.5, Math.PI, Math.PI*2);
+            ctx.lineTo(6, -9+bob); ctx.lineTo(3, -11+bob); ctx.lineTo(0, -8+bob); ctx.lineTo(-3, -11+bob); ctx.lineTo(-6, -9+bob); ctx.fill();
+
+            // 보스 장식
+            if (isBoss) {
+                ctx.fillStyle = isInv ? invertColor("gold") : "gold";
+                ctx.beginPath(); ctx.moveTo(-6, -18+bob); ctx.lineTo(-4, -25+bob); ctx.lineTo(0, -18+bob); ctx.lineTo(4, -25+bob); ctx.lineTo(6, -18+bob); ctx.fill();
+                ctx.fillStyle = isInv ? "rgba(113, 187, 82, 0.3)" : "rgba(142, 68, 173, 0.3)";
+                ctx.beginPath(); ctx.arc(0, 0, 25, 0, Math.PI*2); ctx.fill(); 
+            }
+
+            ctx.restore();
+            
+            if (defDebuff > 0) { 
+                ctx.strokeStyle = '#3498db'; ctx.lineWidth = 2; 
+                ctx.strokeRect(x - (isBoss?30:15), y - (isBoss?40:20), isBoss?60:30, isBoss?65:35); 
+            }
+        }
+
+        function drawGrid() {
+            if (buildType === null && !movingTower) return;
+            ctx.save();
+            ctx.lineWidth = 1;
+            
+            for(let r = 0; r < ROWS; r++) {
+                for(let c = 0; c < COLS; c++) {
+                    let b = isBuildable(c, r);
+                    let occupied = towers.some(t => t.col === c && t.row === r);
+                    let hx = c * CELL_SIZE;
+                    let hy = r * CELL_SIZE;
+                    
+                    if(b && !occupied) {
+                        ctx.fillStyle = 'rgba(46, 204, 113, 0.15)'; 
+                        ctx.fillRect(hx, hy, CELL_SIZE, CELL_SIZE);
+                        ctx.strokeStyle = 'rgba(46, 204, 113, 0.4)';
+                        ctx.strokeRect(hx, hy, CELL_SIZE, CELL_SIZE);
+                    }
+                }
+            }
+
+            if (mouseX > 0 && mouseX < 1000 && mouseY > 0 && mouseY < 500) {
+                let hc = Math.floor(mouseX / CELL_SIZE);
+                let hr = Math.floor(mouseY / CELL_SIZE);
+                let b = isBuildable(hc, hr);
+                let occupied = towers.some(t => t.col === hc && t.row === hr);
+                
+                if (movingTower && movingTower.col === hc && movingTower.row === hr) occupied = false;
+
+                if (b && !occupied) {
+                    ctx.fillStyle = 'rgba(241, 196, 15, 0.5)';
+                    ctx.fillRect(hc * CELL_SIZE, hr * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                }
+            }
+            ctx.restore();
+        }
+
+        function showTowerInfo(typeOrObj) {
+            let desc, costStr = "", gradeStr = "", colorStr = "white", titleStr = "";
+
+            if (typeof typeOrObj === 'object') {
+                desc = towerDesc[typeOrObj.type];
+                let statIndex = Math.min(typeOrObj.grade, towerStats[typeOrObj.type].length - 1);
+                let stat = towerStats[typeOrObj.type][statIndex];
+                
+                let overGrade = Math.max(0, typeOrObj.grade - (towerStats[typeOrObj.type].length - 1));
+                let gradeName = overGrade > 0 ? stat.name + "+" + overGrade : stat.name;
+                
+                costStr = `<span class="info-label">현재 돌파:</span> ${typeOrObj.grade}단계`;
+                gradeStr = `<span class="info-label">사거리:</span> ${Math.floor(stat.range * globalRangeMulti)}`;
+                colorStr = (typeOrObj.type >= 8) ? '#fbc531' : 'white';
+                if(typeOrObj.type === 10) colorStr = '#2ecc71';
+                
+                titleStr = `${desc.title} [${gradeName}]`;
+                
+                if (typeOrObj.rType === 1) titleStr = "🌟[반전] " + titleStr;
+                if (typeOrObj.rType === 2) { titleStr = "✨[황금] " + titleStr; colorStr = "#f1c40f"; }
+            } else {
+                desc = towerDesc[typeOrObj];
+                if(!desc) return;
+                titleStr = desc.title;
+                colorStr = (typeOrObj === 'gacha' || typeOrObj === 'random') ? '#9b59b6' : (typeOrObj >= 8 ? '#fbc531' : 'white');
+                if(typeOrObj === 10) colorStr = '#2ecc71';
+                
+                if(typeOrObj !== 'gacha' && typeOrObj !== 'random') {
+                    let stat = towerStats[typeOrObj][0];
+                    costStr = `<span class="info-label">채용 비용:</span> ${stat.cost}만`;
+                    gradeStr = `<span class="info-label">기본 사거리:</span> ${stat.range}`;
+                } else if(typeOrObj === 'random') {
+                    costStr = `<span class="info-label">채용 비용:</span> 60만`;
+                    colorStr = "#3498db";
+                }
+            }
+
+            infoContent.innerHTML = `
+                <div style="font-size: 16px; margin-bottom: 5px; color: ${colorStr};">${titleStr}</div>
+                <div style="display: flex; justify-content: space-around; width: 100%;">
+                    <div class="info-row"><span class="info-label">특성:</span> ${desc.feature}</div>
+                    <div class="info-row"><span class="info-label">조건:</span> <span style="color:#e74c3c;">${desc.limit}</span></div>
+                    <div class="info-row">${costStr}</div>
+                    <div class="info-row">${gradeStr}</div>
+                </div>
+            `;
+        }
+
+        function resetTowerInfo() {
+            if(selectedTower) showTowerInfo(selectedTower); 
+            else infoContent.innerHTML = `<div style="color:#bdc3c7;">버튼에 마우스를 올리거나 맵의 걸즈를 클릭하면 정보가 표시됩니다.</div>`;
+        }
+
+        function showSkillDesc(type) { skillDescText.innerText = "ℹ️ " + skillDesc[type]; }
+        function hideSkillDesc() { skillDescText.innerText = "마우스를 올리면 스킬 설명이 표시됩니다."; }
+        function triggerShake(frames, intensity) { shakeFrames = frames; shakeIntensity = intensity; }
+        
+        function formatTime(frames) { let s = Math.floor(frames/60); return `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`; }
+        function togglePause() { if(gameOver || !isGameStarted) return; isPaused = !isPaused; document.getElementById('btnPause').innerText = isPaused ? "▶️ 계속하기" : "⏸️ 일시중지"; }
+        function restartGame() { if(confirm("게임을 초기화하시겠습니까?")) location.reload(); }
+
+        function playSlotMachine() {
+            if (!isGameStarted || gameOver || isPaused) return;
+            
+            let betAmountStr = prompt("🎰 [경고: 하이리스크 하이리턴] 🎰\n베팅할 투자 금액(만 원)을 입력하세요.\n50% 확률로 2배가 되거나 전부 잃습니다.\n현재 연봉: " + money + "만 원", "1000");
+            if (betAmountStr === null) return; 
+
+            let betAmount = parseInt(betAmountStr);
+            if (isNaN(betAmount) || betAmount <= 0) {
+                alert("올바른 금액을 입력해주세요.");
+                return;
+            }
+            if (betAmount > money) {
+                alert("가진 연봉보다 많이 베팅할 수 없습니다!");
+                return;
+            }
+
+            money -= betAmount;
+            
+            let isWin = Math.random() < 0.5;
+            
+            if (isWin) {
+                let winAmount = betAmount * 2;
+                money += winAmount;
+                alert(`🎉 대박!! 투자에 성공하여 ${winAmount}만 원을 획득했습니다!`);
+                giantTexts.push({text: `🎰 +${winAmount}만!!`, color: "#2ecc71", timer: 60, scale: 0});
+                triggerShake(10, 5);
+            } else {
+                alert(`💀 꽝... 투자한 ${betAmount}만 원을 모두 날렸습니다...`);
+                giantTexts.push({text: `🎰 -${betAmount}만...`, color: "#e74c3c", timer: 60, scale: 0});
+            }
+            
+            document.getElementById('money').innerText = money;
+        }
+
+        function forceNextWave() {
+            if (gameOver || isClearing || !isGameStarted) return;
+            if (currentWaveIdx < waves.length - 1) {
+                let skippedWave = waves[currentWaveIdx];
+                let remainingSpawns = skippedWave.isBoss ? 1 : Math.floor((skippedWave.duration - waveTimer) / skippedWave.spawnRate);
+                
+                for(let i=0; i<remainingSpawns; i++) {
+                    let rRoll = Math.random() * 100;
+                    let mRMult = 1; let mRType = 0; 
+                    if (rRoll < 3) { mRMult = 5; mRType = 2; }
+                    else if (rRoll < 13) { mRMult = 2; mRType = 1; }
+
+                    let randomX = -20 - (Math.random() * 300); let randomY = 190 + Math.random() * 20;
+                    let scaledHp = skippedWave.hp * mRMult;
+
+                    enemies.push({ 
+                        id: Math.random(), pathIdx: 0, x: randomX, y: randomY, hp: scaledHp, maxHp: scaledHp, 
+                        baseSpeed: skippedWave.speed, speed: skippedWave.speed, slowTimer: 0, color: skippedWave.color, 
+                        isBoss: skippedWave.isBoss, reward: skippedWave.reward * mRMult, emoji: skippedWave.emoji, attackCd: 0, bossSkillCd: 150, 
+                        meleeTarget: null, meleeTimer: 0, defDebuff: 0, mType: skippedWave.mType, rType: mRType
+                    });
+                }
+                currentWaveIdx++; waveTimer = 0;
+                floatingTexts.push({x: 400, y: 200, text: "물량 폭주!", alpha: 1, color: "#e74c3c"});
+            }
+        }
+
+        function toggleDemolish() {
+            if(gameOver || isClearing || !isGameStarted) return;
+            isDemolishMode = !isDemolishMode; selectedTower = null; movingTower = null; resetTowerInfo();
+            let btn = document.getElementById('btnDemolish');
+            btn.style.background = isDemolishMode ? "#d63031" : "#7f8c8d";
+            if(isDemolishMode) buildType = null; 
+        }
+
+        function checkBuildLimit(type) {
+            if (type >= 8 && type <= 10 && currentWaveIdx < 29) { alert("사내 규정: 기술사/융합 전문가는 30라운드부터 채용 가능합니다!"); return false; }
+            if (type >= 6 && type <= 7 && currentWaveIdx < 19) { alert("사내 규정: 관리사/지도사님은 20라운드부터 채용 가능합니다!"); return false; }
+            if (type === 'gacha' || type === 'random') return true; 
+            const limits = [2,3,4,5];
+            if (limits.includes(type) && towers.filter(t => t.type === type).length >= 5) { alert(`${towerDesc[type].title} T.O(5명)가 꽉 찼습니다!`); return false; }
+            if (type >= 6 && type <= 10 && towers.some(t => t.type === type)) { alert("법적 제재: 상위 자격증은 현장당 1명만 (중복불가)"); return false; }
+            return true;
+        }
+
+        function getRandomBasicType() {
+            let available = [0,1,2,3,4,5].filter(type => {
+                const limits = [2,3,4,5];
+                if (limits.includes(type) && towers.filter(t => t.type === type).length >= 5) return false;
+                return true;
+            });
+            if (available.length === 0) return -1;
+            return available[Math.floor(Math.random() * available.length)];
+        }
+
+        function doGacha() {
+            let roll = Math.random() * 100;
+            let resultType = 0;
+            if (currentWaveIdx < 19) { resultType = Math.floor(Math.random() * 6); } 
+            else if (currentWaveIdx < 29) {
+                if (roll < 95) resultType = Math.floor(Math.random() * 6);
+                else resultType = 6 + Math.floor(Math.random() * 2);
+            } else {
+                if (roll < 95) resultType = Math.floor(Math.random() * 6); 
+                else resultType = 6 + Math.floor(Math.random() * 5); 
+            }
+            if (resultType >= 6 && towers.some(t => t.type === resultType)) {
+                alert("가챠 경고: 이미 채용된 상위 걸즈가 뽑혀 1억이 환불됩니다.");
+                money += 10000; return null;
+            }
+            return resultType;
+        }
+
+        function upgradeTower(t) {
+            let maxGrade = (t.rType > 0) ? 3 : towerStats[t.type].length - 1;
+            
+            if (t.grade < maxGrade) {
+                let statIndex = Math.min(t.grade + 1, towerStats[t.type].length - 1);
+                let nextStat = towerStats[t.type][statIndex];
+                
+                let overGrade = Math.max(0, (t.grade + 1) - (towerStats[t.type].length - 1));
+                let upgradeCost = Math.floor(nextStat.cost * Math.pow(3, t.grade + 1) * Math.pow(2, overGrade));
+                
+                if (money >= upgradeCost) {
+                    money -= upgradeCost;
+                    let hpMultiplier = (t.type >= 6) ? 2 : 10; 
+                    t.grade++; t.cd = 0; 
+                    
+                    if (overGrade > 0) t.rMult *= 1.5; 
+                    
+                    t.maxHp = nextStat.cost * hpMultiplier * t.rMult * (t.grade + 1); 
+                    t.hp = t.maxHp; 
+                    floatingTexts.push({x: t.x, y: t.y-25, text: overGrade > 0 ? "초월 진급!" : "진급 완료!", alpha: 1, color: "#f1c40f"});
+                    showTowerInfo(t); 
+                } else floatingTexts.push({x: t.x, y: t.y-25, text: `예산 부족!(${upgradeCost}만 필요)`, alpha: 1, color: "#e74c3c"});
+            }
+            document.getElementById('money').innerText = money;
+        }
+
+        function checkFusion() {
+            let t6 = towers.find(t => t.type === 6);
+            let t7 = towers.find(t => t.type === 7);
+            let hasElite = towers.some(t => t.type === 10);
+            
+            let canFuse = (t6 && t7 && !hasElite && money >= 100000 && Math.hypot(t6.x - t7.x, t6.y - t7.y) <= CELL_SIZE + 5);
+            
+            if (canFuse && !fusionWasPossible) {
+                fusionDisplayTimer = 120; 
+            }
+            fusionWasPossible = canFuse;
+
+            if (canFuse && fusionDisplayTimer > 0) {
+                fusionDisplayTimer--;
+                fusionPairs = [{t1: t6, t2: t7, mx: (t6.x + t7.x)/2, my: (t6.y + t7.y)/2}];
+            } else {
+                fusionPairs = [];
+            }
+        }
+
+        function executeFusion(pair) {
+            if (money < 100000) { alert("융합 비용(10억)이 부족합니다!"); return; }
+            if (towers.some(t => t.type === 10)) { alert("융합 전문가가 이미 현장에 있습니다!"); return; }
+            
+            money -= 100000;
+            towers = towers.filter(t => t !== pair.t1 && t !== pair.t2);
+            
+            let actualCost = towerStats[10][0].cost;
+            let hpMultiplier = 3; 
+            let fMaxHp = actualCost * hpMultiplier;
+
+            towers.push({ 
+                type: 10, grade: 0, col: pair.t1.col, row: pair.t1.row, x: pair.t1.x, y: pair.t1.y, cd: 0, skillCd: 0, 
+                maxHp: fMaxHp, hp: fMaxHp, healCdTimer: 0, rMult: 1, rType: 0, tauntTimer: 0, superBuff: 0,
+                animOffset: Math.random()*100
+            });
+            
+            specialEffects.push({ type: 'circle', x: pair.t1.x, y: pair.t1.y, radius: 20, maxRadius: 100, alpha: 1.0, color: "46, 204, 113" });
+            giantTexts.push({text: "✨ 엘리트 융합 성공!! ✨", color: "#2ecc71", timer: 90, scale: 0});
+            triggerShake(20, 10);
+            
+            document.getElementById('money').innerText = money;
+            fusionPairs = []; 
+            fusionDisplayTimer = 0;
+        }
+
+        function useGlobalSkill(type) {
+            if (gameOver || isPaused || !isGameStarted) return;
+            let t = towers.find(tw => tw.type === type);
+            if (!t || t.skillCd > 0) return;
+
+            let skDmgMulti = globalDmgMulti * t.rMult; 
+            let actualRange = towerStats[t.type][Math.min(t.grade, towerStats[t.type].length - 1)].range * globalRangeMulti;
+            
+            if (t.type === 6) { 
+                enemies.forEach(e => { if(Math.hypot(e.x - t.x, e.y - t.y) < 300) e.hp -= 3500 * skDmgMulti; }); 
+                specialEffects.push({ type: 'circle', x: t.x, y: t.y, radius: 10, maxRadius: 300, alpha: 0.8, color: "232, 67, 147" });
+                triggerShake(10, 5);
+                skillCutin = { type: 6, timer: 90, rType: t.rType };
+            } else if (t.type === 7) { 
+                enemies.forEach(e => { if (Math.hypot(e.x - t.x, e.y - t.y) < actualRange) e.defDebuff = 600; });
+                specialEffects.push({ type: 'circle', x: t.x, y: t.y, radius: 10, maxRadius: actualRange, alpha: 0.5, color: "214, 48, 49" });
+                triggerShake(10, 5);
+                skillCutin = { type: 7, timer: 90, rType: t.rType };
+            } else if (t.type === 8) { 
+                t.superBuff = 1800; 
+                triggerShake(20, 10); 
+                skillCutin = { type: 8, timer: 90, rType: t.rType };
+            } else if (t.type === 9) { 
+                triggerShake(30, 15); 
+                
+                enemies.forEach(e => { 
+                    e.speed = e.baseSpeed * 0.2; 
+                    e.slowTimer = 300; 
+
+                    for(let m=0; m<3; m++) {
+                        let offsetX = (Math.random() - 0.5) * 60;
+                        let offsetY = (Math.random() - 0.5) * 60;
+                        let startY = -100; 
+                        
+                        bullets.push({
+                            type: 'fire_missile', x: e.x + offsetX, y: startY,
+                            vx: 0, vy: 15, targetX: e.x + offsetX, targetY: e.y + offsetY,
+                            targetId: e.id, dmg: 0, isPierce: false, isChain: false, hitIds: []
+                        });
+                    }
+                });
+                
+                skillCutin = { type: 9, timer: 90, rType: t.rType };
+            } else if (t.type === 10) { 
+                reaperEffect = { timer: 120, alpha: 0 };
+                triggerShake(40, 15); 
+                
+                enemies.forEach(e => { 
+                    let dmg = e.hp * 0.4;
+                    e.hp -= dmg; 
+                    e.slowTimer = 180; 
+                    e.stunned = true; 
+                    
+                    floatingTexts.push({
+                        x: e.x, y: e.y - 20, 
+                        text: `-${Math.floor(dmg)}`, 
+                        alpha: 1, 
+                        color: "#ff4d4d", 
+                        vy: -2 
+                    });
+                });
+                
+                skillCutin = { type: 10, timer: 120, rType: t.rType };
+                t.skillCd = 1800; 
+                return; 
+            }
+            t.skillCd = (t.type === 8 || t.type === 9) ? 1800 + 900 : 900; 
+        }
+
+        function buyGlobal(type) {
+            if (!isGameStarted) return;
+            if (type === 'dmg') {
+                if (money >= costShopDmg) {
+                    money -= costShopDmg; globalDmgMulti += 0.1; costShopDmg = Math.floor(costShopDmg * 2.5);
+                    document.getElementById('btnShopDmg').innerText = `전체 딜 +10% (${costShopDmg}만)`;
+                } else { alert("연봉이 부족합니다!"); return; }
+            } else if (type === 'range') {
+                if (money >= costShopRange) {
+                    money -= costShopRange; globalRangeMulti += 0.1; costShopRange = Math.floor(costShopRange * 2.5);
+                    document.getElementById('btnShopRange').innerText = `전체 사거리 +10% (${costShopRange}만)`;
+                } else { alert("연봉이 부족합니다!"); return; }
+            } else if (type === 'def') {
+                if (money >= costShopDef) {
+                    money -= costShopDef; globalDefMulti += 0.2; costShopDef = Math.floor(costShopDef * 2.5);
+                    document.getElementById('btnShopDef').innerText = `방어력 강화 +20% (${costShopDef}만)`;
+                } else { alert("연봉이 부족합니다!"); return; }
+            }
+            document.getElementById('money').innerText = money;
+            floatingTexts.push({x: 500, y: 480, text: `스펙업 완료!`, alpha: 1, color: "#f1c40f"});
+        }
+
+        function selectType(type) {
+            if(gameOver || isClearing || !isGameStarted) return;
+            buildType = type;
+            
+            let allBtns = ['btnRandom', 'btn6', 'btn7', 'btn8', 'btn9', 'btn10', 'btnGacha'];
+            allBtns.forEach(id => { let el = document.getElementById(id); if(el) el.classList.remove('active'); });
+
+            isDemolishMode = false; document.getElementById('btnDemolish').style.background = "#7f8c8d";
+            selectedTower = null; movingTower = null; resetTowerInfo();
+            
+            let targetId = (type === 'random') ? 'btnRandom' : (type === 'gacha' ? 'btnGacha' : 'btn' + type);
+            let activeEl = document.getElementById(targetId);
+            if (activeEl) activeEl.classList.add('active');
+            
+            showTowerInfo(type); 
+        }
+
+        canvas.addEventListener('mousemove', (e) => {
+            if(gameOver || isClearing || !isGameStarted) return;
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left; mouseY = e.clientY - rect.top;
+        });
+        canvas.addEventListener('mouseout', () => { mouseX = -100; mouseY = -100; resetTowerInfo(); });
+
+        canvas.addEventListener('click', (e) => {
+            if (gameOver || isPaused || isClearing || !isGameStarted) return;
+            const rect = canvas.getBoundingClientRect();
+            let rawX = e.clientX - rect.left; let rawY = e.clientY - rect.top;
+
+            let hc = Math.floor(rawX / CELL_SIZE);
+            let hr = Math.floor(rawY / CELL_SIZE);
+            let cx = hc * CELL_SIZE + CELL_SIZE / 2;
+            let cy = hr * CELL_SIZE + CELL_SIZE / 2;
+
+            if (fusionPairs.length > 0) {
+                for (let i = 0; i < fusionPairs.length; i++) {
+                    let p = fusionPairs[i];
+                    let fY = p.my - 50; 
+                    if (rawX >= p.mx - 40 && rawX <= p.mx + 40 && rawY >= fY && rawY <= fY + 30) {
+                        executeFusion(p);
+                        return;
+                    }
+                }
+            }
+
+            if (selectedTower && !isDemolishMode && !movingTower) {
+                let hx = selectedTower.x; let hy = selectedTower.y;
+                let uiY = hy - 50; 
+                if (uiY < 0) uiY = hy + 25; 
+
+                if (rawY >= uiY && rawY <= uiY + 25 && rawX >= hx - 45 && rawX <= hx + 45) {
+                    if (rawX <= hx) { upgradeTower(selectedTower); return; } 
+                    else { 
+                        movingTower = selectedTower;
+                        floatingTexts.push({x: hx, y: hy-30, text: "새 근무지로 이동!", alpha: 1, color: "#3498db"});
+                        return; 
+                    }
+                }
+            }
+
+            let clickedTower = towers.find(t => t.col === hc && t.row === hr);
+
+            if (isDemolishMode) {
+                if (clickedTower) {
+                    if (money >= 100) { 
+                        money -= 100; 
+                        towers = towers.filter(t => t !== clickedTower); 
+                        specialEffects.push({ type: 'circle', x: clickedTower.x, y: clickedTower.y, radius: 5, maxRadius: 15, alpha: 0.8, color: "231, 76, 60" });
+                        floatingTexts.push({x: clickedTower.x, y: clickedTower.y, text: "-100만 (권고사직)", alpha: 1, color: "#e74c3c"}); 
+                    } 
+                    else {
+                        floatingTexts.push({x: clickedTower.x, y: clickedTower.y, text: "비용 부족!", alpha: 1, color: "#e74c3c"});
+                    }
+                    document.getElementById('money').innerText = money;
+                    selectedTower = null; 
+                    resetTowerInfo();
+                } return;
+            }
+
+            if (movingTower) {
+                if (!isBuildable(hc, hr)) {
+                    floatingTexts.push({x: rawX, y: rawY, text: "설치 불가", color: "#e74c3c"}); return;
+                }
+                let collision = towers.find(t => t !== movingTower && t.col === hc && t.row === hr);
+                if (collision || clickedTower === movingTower) { 
+                    movingTower = null; selectedTower = null; resetTowerInfo(); return; 
+                }
+                movingTower.col = hc; movingTower.row = hr;
+                movingTower.x = cx; movingTower.y = cy;
+                movingTower = null; selectedTower = null; resetTowerInfo(); return;
+            }
+
+            if (clickedTower && !isDemolishMode) {
+                selectedTower = clickedTower; showTowerInfo(selectedTower); return; 
+            } else {
+                selectedTower = null; showTowerInfo(buildType); 
+            }
+
+            if (!isBuildable(hc, hr)) return; 
+
+            if (!clickedTower && buildType !== null) {
+                let actualType = buildType; let actualCost = 0;
+                
+                if (buildType === 'random') {
+                    if (money < 60) { floatingTexts.push({x: cx, y: cy, text: "돈 부족!", alpha: 1, color: "#e74c3c"}); return; }
+                    actualType = getRandomBasicType();
+                    if (actualType === -1) { alert("모든 일반 걸즈의 T.O가 꽉 찼습니다!"); return; }
+                    money -= 60;
+                    actualCost = 60;
+                } else if (buildType === 'gacha') {
+                    if (money < 10000) { alert("가챠 비용(1억)이 부족합니다!"); return; }
+                    money -= 10000; actualType = doGacha();
+                    if (actualType === null) { document.getElementById('money').innerText = money; return; }
+                    actualCost = towerStats[actualType][0].cost; 
+                } else {
+                    if (!checkBuildLimit(actualType)) return;
+                    actualCost = towerStats[actualType][0].cost;
+                    if (money >= actualCost) money -= actualCost;
+                    else { floatingTexts.push({x: cx, y: cy, text: "돈 부족!", alpha: 1, color: "#e74c3c"}); return; }
+                }
+
+                let rRoll = Math.random() * 100;
+                let rMult = 1; let rType = 0; 
+                if (rRoll < 3) { rMult = 5; rType = 2; giantTexts.push({text: "✨전설의 황금 걸즈 강림!!✨", color: "#f1c40f", timer: 120, scale: 0}); triggerShake(20, 10); }
+                else if (rRoll < 13) { rMult = 2; rType = 1; giantTexts.push({text: "🌟반전 걸즈 영입!!🌟", color: "#2ecc71", timer: 120, scale: 0}); triggerShake(10, 5); }
+
+                let hpMultiplier = (actualType >= 6) ? 3 : 15; 
+                let fMaxHp = actualCost * hpMultiplier * rMult;
+
+                towers.push({ 
+                    type: actualType, grade: 0, col: hc, row: hr, x: cx, y: cy, cd: 0, skillCd: 0, 
+                    maxHp: fMaxHp, hp: fMaxHp, healCdTimer: 0, rMult: rMult, rType: rType, tauntTimer: 0, superBuff: 0,
+                    animOffset: Math.random()*100
+                });
+            }
+            document.getElementById('money').innerText = money;
+        });
+
+        function showClearSummary() {
+            let minutes = Math.floor(totalPlayFrames / 3600); let seconds = Math.floor((totalPlayFrames % 3600) / 60);
+            overlay.innerHTML = `
+                <div style="font-size: 50px; color: gold; text-shadow: 2px 2px 5px black; margin-bottom: 20px;">🏆 명예의 전당 🏆</div>
+                <div style="font-size: 24px; color: white; margin-bottom: 10px;">모든 고난을 뚫고 취업에 성공하셨습니다!</div>
+                <div style="font-size: 20px; color: #dfe6e9; text-align: left; background: rgba(255,255,255,0.1); padding: 20px; border-radius: 10px;">
+                    ▶ 소요 시간: ${minutes}분 ${seconds}초<br>
+                    ▶ 남은 연봉: ${money}만 원<br>
+                    ▶ 남은 멘탈: ${hp}<br>
+                    ▶ 생존 걸즈 수: ${towers.length}명
+                </div>
+                <button onclick="restartGame()" style="margin-top: 30px; font-size: 20px; padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer;">새 게임 하기</button>
+            `;
+            overlay.style.display = 'flex';
+        }
+
+        function gameLoop() {
+            requestAnimationFrame(gameLoop);
+            if (!isGameStarted) return; 
+
+            if (shakeFrames > 0) {
+                let dx = (Math.random() - 0.5) * shakeIntensity; let dy = (Math.random() - 0.5) * shakeIntensity;
+                wrapper.style.transform = `translate(${dx}px, ${dy}px)`; shakeFrames--;
+            } else { wrapper.style.transform = `translate(0px, 0px)`; }
+
+            if (isPaused) {
+                ctx.fillStyle = "rgba(0,0,0,0.05)"; ctx.fillRect(0,0,canvas.width,canvas.height);
+                ctx.fillStyle = "white"; ctx.font = "bold 40px Arial"; ctx.textAlign="center"; ctx.fillText("⏸️ 경영 일시중지", 500, 250); ctx.textAlign="left";
+                return;
+            }
+            if (gameOver) return;
+            if (!isClearing) { totalPlayFrames++; timerText.innerText = formatTime(totalPlayFrames); }
+
+            checkFusion();
+
+            let hasSkill = false;
+            for (let i = 6; i <= 10; i++) {
+                let t = towers.find(tw => tw.type === i);
+                let btn = document.getElementById('skillBtn' + i);
+                if (t) {
+                    hasSkill = true; btn.style.display = 'inline-block';
+                    if (t.skillCd > 0) { btn.disabled = true; btn.innerText = `⏳ ${towerDesc[i].title.split(" ")[1]} (${Math.ceil(t.skillCd/60)}s)`; } 
+                    else { btn.disabled = false; btn.innerText = towerDesc[i].title.split(" ")[1] + " (Ready!)"; }
+                } else if (btn) { btn.style.display = 'none'; }
+            }
+            document.getElementById('noSkillText').style.display = hasSkill ? 'none' : 'inline-block';
+
+            if (isClearing) {
+                clearCountDown--;
+                if (clearCountDown % 10 === 0) { specialEffects.push({ type: 'circle', x: Math.random()*1000, y: Math.random()*500, radius: 10, maxRadius: 150, alpha: 1.0, color: `${Math.floor(Math.random()*255)}, ${Math.floor(Math.random()*255)}, ${Math.floor(Math.random()*255)}` }); triggerShake(5, 2); }
+                ctx.fillStyle = 'rgba(0,0,0,0.1)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+                for (let i = specialEffects.length - 1; i >= 0; i--) {
+                    let eff = specialEffects[i]; 
+                    if(eff.type === 'circle') {
+                        eff.radius += 5; eff.alpha -= 0.02;
+                        ctx.beginPath(); ctx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2); ctx.fillStyle = `rgba(${eff.color}, ${eff.alpha})`; ctx.fill();
+                    }
+                    if (eff.alpha <= 0) specialEffects.splice(i, 1);
+                }
+                if (clearCountDown <= 0) { gameOver = true; showClearSummary(); }
+                return;
+            }
+
+            if (hp <= 0) { alert('멘탈 붕괴! 취업에 실패했습니다.'); gameOver = true; return; }
+            
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            frame++;
+
+            if (currentWaveIdx >= waves.length) { isClearing = true; return; }
+            let currentWave = waves[currentWaveIdx]; waveTimer++;
+            document.getElementById('waveText').innerText = currentWave.name;
+
+            if (waveTimer > currentWave.duration && enemies.filter(e => e.isBoss).length === 0) { currentWaveIdx++; waveTimer = 0; }
+
+            ctx.strokeStyle = "#d1ccc0"; ctx.lineWidth = 40; ctx.lineCap = "round"; ctx.lineJoin = "round";
+            ctx.beginPath(); ctx.moveTo(path[0].x, path[0].y);
+            path.forEach(p => ctx.lineTo(p.x, p.y)); ctx.stroke();
+
+            drawGrid();
+
+            if (waveTimer < currentWave.duration) {
+                let spawnNow = false;
+                let isBossSpawn = false;
+                
+                if (currentWave.isBoss) {
+                    if (waveTimer === 10) { spawnNow = true; isBossSpawn = true; }
+                } else {
+                    if (frame % currentWave.spawnRate === 0) { spawnNow = true; }
+                }
+
+                if (spawnNow) {
+                    let rRoll = Math.random() * 100;
+                    let mRMult = 1; let mRType = 0; 
+                    if (rRoll < 3) { mRMult = 5; mRType = 2; }
+                    else if (rRoll < 13) { mRMult = 2; mRType = 1; }
+
+                    let randomX = isBossSpawn ? path[0].x : path[0].x - 20 - (Math.random() * 300); 
+                    let randomY = isBossSpawn ? path[0].y : path[0].y + (Math.random()*20-10);
+                    let scaledHp = currentWave.hp * mRMult;
+
+                    enemies.push({ 
+                        id: Math.random(), pathIdx: 0, x: randomX, y: randomY, hp: scaledHp, maxHp: scaledHp, 
+                        baseSpeed: currentWave.speed, speed: currentWave.speed, slowTimer: 0, color: currentWave.color, 
+                        isBoss: currentWave.isBoss, reward: currentWave.reward * mRMult, emoji: currentWave.emoji, attackCd: 0, bossSkillCd: 300, 
+                        meleeTarget: null, meleeTimer: 0, defDebuff: 0, stunned: false, mType: currentWave.mType, rType: mRType
+                    });
+                }
+            }
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                if (e.defDebuff > 0) e.defDebuff--;
+
+                if (e.slowTimer > 0) {
+                    e.slowTimer--; 
+                    if (e.stunned) e.speed = 0; 
+                } else {
+                    e.speed = e.baseSpeed;
+                    e.stunned = false;
+                }
+
+                if (e.isBoss) {
+                    let target = path[e.pathIdx+1];
+                    if(target && e.meleeTarget === null && !e.stunned) {
+                        let dx = target.x - e.x, dy = target.y - e.y, dist = Math.hypot(dx, dy);
+                        if(dist < e.speed) e.pathIdx++;
+                        else { e.x += (dx/dist)*e.speed; e.y += (dy/dist)*e.speed; }
+                    }
+
+                    if (Math.random() < 0.02 && !e.stunned) {
+                        let closeTower = towers.find(t => Math.hypot(t.x - e.x, t.y - e.y) < 150);
+                        if (closeTower) {
+                            triggerShake(10, 8); 
+                            let smashDmg = (currentWaveIdx * 50 * diffMult) / globalDefMulti;
+                            closeTower.hp -= smashDmg;
+                            specialEffects.push({ type: 'circle', x: closeTower.x, y: closeTower.y, radius: 5, maxRadius: 15, alpha: 0.8, color: "231, 76, 60" });
+                            floatingTexts.push({x: closeTower.x, y: closeTower.y - 15, text: `보스 지진! -${Math.floor(smashDmg)}`, alpha: 1, color: "#c0392b"});
+                        }
+                    }
+
+                    if (e.bossSkillCd > 0) e.bossSkillCd--;
+                    if (e.bossSkillCd <= 0 && towers.length > 0 && !e.stunned) {
+                        floatingTexts.push({x: e.x, y: e.y - 30, text: "보스 엑티브: 압박 면접!", alpha: 1, color: "#c0392b"});
+                        specialEffects.push({ type: 'circle', x: e.x, y: e.y, radius: 20, maxRadius: 500, alpha: 0.5, color: "231, 76, 60" });
+                        triggerShake(8, 4); 
+                        towers.forEach(t => { 
+                            let bDmg = (currentWaveIdx * 15 * diffMult) / globalDefMulti; 
+                            t.hp -= bDmg; floatingTexts.push({x: t.x, y: t.y, text: `-${Math.floor(bDmg)}`, alpha: 1, color: "#e74c3c"}); 
+                        });
+                        e.bossSkillCd = 300 + Math.random() * 200; 
+                    }
+                } else {
+                    let target = path[e.pathIdx+1];
+                    if(target && !e.stunned) {
+                        let dx = target.x - e.x, dy = target.y - e.y, dist = Math.hypot(dx, dy);
+                        if(dist < e.speed) e.pathIdx++;
+                        else { e.x += (dx/dist)*e.speed; e.y += (dy/dist)*e.speed; }
+                    }
+                }
+
+                if (currentWaveIdx >= 29 && !e.isBoss && !e.stunned) {
+                    if (e.attackCd > 0) e.attackCd--;
+                    if (e.attackCd === 0 && Math.random() < 0.02) { 
+                        let targetTower; let taunters = towers.filter(tw => tw.tauntTimer > 0);
+                        if (taunters.length > 0) targetTower = taunters[Math.floor(Math.random() * taunters.length)];
+                        else targetTower = towers.find(t => Math.hypot(t.x - e.x, t.y - e.y) < 150);
+
+                        if (targetTower) {
+                            let dx = targetTower.x - e.x; let dy = targetTower.y - e.y; let dist = Math.hypot(dx, dy);
+                            enemyBullets.push({ x: e.x, y: e.y, vx: (dx/dist)*4, vy: (dy/dist)*4, dmg: (currentWaveIdx * 3 * diffMult) });
+                            e.attackCd = 90; 
+                        }
+                    }
+                }
+
+                if (e.stunned) { ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(e.x, e.y - (e.isBoss?30:15), 5, 0, Math.PI*2); ctx.stroke(); }
+
+                drawMonsterGirl(ctx, e.x, e.y, e.mType, e.isBoss, frame, e.hp/e.maxHp, e.defDebuff, e.rType);
+
+                ctx.fillStyle = 'black'; ctx.fillRect(e.x - (e.isBoss?25:15), e.y - (e.isBoss?40:20), e.isBoss?50:30, 5);
+                ctx.fillStyle = '#00b894'; ctx.fillRect(e.x - (e.isBoss?25:15), e.y - (e.isBoss?40:20), (e.isBoss?50:30) * (e.hp/e.maxHp), 5);
+                
+                // 특수 속성 텍스트 표시
+                if (e.rType === 2) {
+                    ctx.fillStyle = "#f1c40f"; ctx.font = "bold 10px Arial"; ctx.fillText("✨황금", e.x - 15, e.y - (e.isBoss?45:25));
+                } else if (e.rType === 1) {
+                    ctx.fillStyle = "#9b59b6"; ctx.font = "bold 10px Arial"; ctx.fillText("🌟반전", e.x - 15, e.y - (e.isBoss?45:25));
+                }
+                
+                if (e.x > 1000) { hp -= (e.isBoss ? 10 : 1); enemies.splice(i, 1); document.getElementById('hp').innerText = hp; }
+            }
+
+            for (let i = enemyBullets.length - 1; i >= 0; i--) {
+                let eb = enemyBullets[i]; eb.x += eb.vx; eb.y += eb.vy;
+                ctx.fillStyle = '#e74c3c'; ctx.beginPath(); ctx.arc(eb.x, eb.y, 4, 0, Math.PI * 2); ctx.fill();
+                if (eb.x < 0 || eb.x > 1000 || eb.y < 0 || eb.y > 500) { enemyBullets.splice(i, 1); continue; }
+                let hitIndex = towers.findIndex(t => Math.hypot(t.x - eb.x, t.y - eb.y) < 20);
+                if (hitIndex !== -1) {
+                    let t = towers[hitIndex]; let finalDmg = eb.dmg / globalDefMulti; 
+                    t.hp -= finalDmg; floatingTexts.push({x: t.x, y: t.y, text: `-${Math.floor(finalDmg)}`, alpha: 1, color: "#e74c3c"});
+                    enemyBullets.splice(i, 1);
+                }
+            }
+
+            towers = towers.filter(t => {
+                if(t.hp <= 0) {
+                    specialEffects.push({ type: 'circle', x: t.x, y: t.y, radius: 5, maxRadius: 15, alpha: 0.8, color: "231, 76, 60" });
+                    floatingTexts.push({x: t.x, y: t.y - 15, text: "걸즈 파괴됨!", alpha: 1, color: "#c0392b"});
+                    triggerShake(5, 3);
+                    if(selectedTower === t) { selectedTower = null; resetTowerInfo(); }
+                    return false;
+                } return true;
+            });
+
+            towers.forEach(t => {
+                let statIndex = Math.min(t.grade, towerStats[t.type].length - 1);
+                let stat = towerStats[t.type][statIndex];
+                let actualRange = stat.range * globalRangeMulti;
+                
+                if (t.skillCd > 0) t.skillCd--; if (t.tauntTimer > 0) t.tauntTimer--; if (t.superBuff > 0) t.superBuff--;
+
+                if (t.type >= 6 || t.rType > 0) {
+                    ctx.save();
+                    ctx.translate(t.x, t.y);
+                    let auraPulse = Math.sin(frame * 0.05 + t.animOffset) * 4;
+                    let auraAngle = frame * 0.02 + t.animOffset;
+                    
+                    let r, g, b;
+                    if (t.rType === 2) { r=241; g=196; b=15; } 
+                    else if (t.rType === 1) { r=155; g=89; b=182; } 
+                    else if (t.type === 6) { r=232; g=67; b=147; } 
+                    else if (t.type === 7) { r=214; g=48; b=49; } 
+                    else if (t.type === 8) { r=251; g=197; b=49; } 
+                    else if (t.type === 9) { r=235; g=77; b=75; } 
+                    else if (t.type === 10) { r=46; g=204; b=113; }
+                    else { r=255; g=255; b=255; }
+                    
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 18 + auraPulse, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.25)`;
+                    ctx.fill();
+                    
+                    if (t.type >= 6) {
+                        ctx.rotate(auraAngle);
+                        ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, 0.6)`;
+                        ctx.lineWidth = 2;
+                        ctx.setLineDash([8, 6]);
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 24 + auraPulse, 0, Math.PI * 2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                    }
+                    ctx.restore();
+                }
+
+                let isAttacking = (t.cd <= 5) || (t.type === 2 && t.healCdTimer >= stat.healCd - 5) || (t.type === 9 && t.cd <= 5);
+                drawCuteGirl(ctx, t.x, t.y, t.type, frame + t.animOffset, t.rType, t.tauntTimer, isAttacking);
+
+                ctx.fillStyle = 'black'; ctx.fillRect(t.x - 20, t.y + 20, 40, 4);
+                ctx.fillStyle = '#2ecc71'; ctx.fillRect(t.x - 20, t.y + 20, 40 * Math.max(0, t.hp / t.maxHp), 4);
+
+                ctx.font = "bold 11px Arial";
+                ctx.textAlign = "center";
+                let rankY = t.y + 35; 
+                
+                if (t.type === 10) {
+                    ctx.lineWidth = 2; ctx.strokeStyle = "black"; ctx.strokeText("Elite", t.x, rankY);
+                    ctx.fillStyle = "#2ecc71"; ctx.fillText("Elite", t.x, rankY);
+                } else if (t.type >= 8) { 
+                    ctx.lineWidth = 2; ctx.strokeStyle = "black"; ctx.strokeText("Epic", t.x, rankY);
+                    ctx.fillStyle = "#f1c40f"; ctx.fillText("Epic", t.x, rankY);
+                } else if (t.type >= 6) { 
+                    ctx.fillStyle = "#e67e22"; ctx.fillText("Legend", t.x, rankY);
+                } else if (t.rType === 2) { 
+                    ctx.fillStyle = "#fd79a8"; ctx.fillText("Unique", t.x, rankY);
+                } else if (t.rType === 1) { 
+                    ctx.fillStyle = "#9b59b6"; ctx.fillText("Rare", t.x, rankY);
+                } else { 
+                    ctx.fillStyle = "#2d3436"; ctx.fillText("Normal", t.x, rankY);
+                }
+                ctx.textAlign = "left"; 
+
+                let isSkillable = (t.type >= 6);
+                if (isSkillable && t.skillCd === 0) { ctx.fillStyle = '#f1c40f'; ctx.font="12px Arial"; ctx.fillText('🌟', t.x + 10, t.y - 15); }
+
+                let spdBuffMultiplier = 1; let atkBuffMultiplier = 1;
+                
+                towers.forEach(other => {
+                    let oStatIndex = Math.min(other.grade, towerStats[other.type].length - 1);
+                    let oStat = towerStats[other.type][oStatIndex];
+                    let distToOther = Math.hypot(t.x - other.x, t.y - other.y);
+                    
+                    if (distToOther <= oStat.range * globalRangeMulti) {
+                        if (oStat.type === "aura_spd") spdBuffMultiplier += (oStat.buff * other.rMult); 
+                        if (oStat.type === "aura_income" || oStat.type === "square_bomb") atkBuffMultiplier = Math.max(atkBuffMultiplier, (oStat.buff||1.2) * other.rMult); 
+                    }
+                    
+                    // 8번(건축전기) 및 9번(소방기술사), 10번(엘리트) 공속 시너지
+                    if ((other.type === 8 || other.type === 9 || other.type === 10) && distToOther <= 300) {
+                        spdBuffMultiplier += 0.15; 
+                    }
+                });
+
+                // 버그 수정 1: 직접 타격 공격을 하지 않는 오라/버프 타워들의 조기 리턴 처리 (무한 투사체 생성 방지)
+                if (stat.type === "aura_heal") {
+                    t.healCdTimer++;
+                    if (t.healCdTimer >= stat.healCd) {
+                        let finalHeal = stat.heal * t.rMult; 
+                        towers.forEach(target => {
+                            if (Math.hypot(target.x - t.x, target.y - t.y) <= actualRange && target.hp < target.maxHp) {
+                                target.hp = Math.min(target.maxHp, target.hp + finalHeal);
+                                floatingTexts.push({x: target.x, y: target.y - 10, text: `+${finalHeal}`, alpha: 1, color: "#2ecc71"});
+                            }
+                        });
+                        specialEffects.push({ type: 'circle', x: t.x, y: t.y, radius: 5, maxRadius: actualRange, alpha: 0.2, color: "46, 204, 113" });
+                        t.healCdTimer = 0;
+                    }
+                    return; // 최적화 방어 코드
+                }
+
+                if (stat.type === "aura_spd") {
+                    return; // 최적화 방어 코드 (정처기 총알 버그 방지)
+                }
+
+                if (stat.type === "income" || stat.type === "aura_income") {
+                    if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                    else {
+                        let finalInc = stat.income * t.rMult; money += finalInc; document.getElementById('money').innerText = money;
+                        floatingTexts.push({x: t.x, y: t.y - 20, text: `+${finalInc}만`, alpha: 1, color: "#f1c40f"}); t.cd = stat.cd;
+                    } 
+                    return; // 최적화 방어 코드
+                }
+
+                // 아래부터는 공격형 타워 로직
+                if (stat.type === "square_bomb") {
+                    if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                    else {
+                        let target = enemies.find(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange);
+                        let finalInc = stat.income * t.rMult; money += finalInc; document.getElementById('money').innerText = money;
+                        floatingTexts.push({x: t.x, y: t.y - 20, text: `+${finalInc}만`, alpha: 1, color: "#f1c40f"});
+
+                        if (target) {
+                            let dx = target.x - t.x; let dy = target.y - t.y; let dist = Math.hypot(dx, dy);
+                            bullets.push({
+                                type: 'square', grade: t.grade, x: t.x, y: t.y - 10,
+                                vx: (dx/dist)*12, vy: (dy/dist)*12, targetId: target.id,
+                                dmg: stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult,
+                                isPierce: false, isChain: false, hitIds: []
+                            });
+                        }
+                        t.cd = stat.cd;
+                    }
+                    return;
+                }
+
+                // === 십자가 장판 레이저 (소방기술사 일반공격) ===
+                if (stat.type === "cross_laser") {
+                    if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                    else {
+                        let target = enemies.find(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange);
+                        if (target) {
+                            for(let i=0; i<3; i++) {
+                                let offsetX = (Math.random() - 0.5) * 80;
+                                let offsetY = (Math.random() - 0.5) * 80;
+                                let tx = target.x + offsetX;
+                                let ty = target.y + offsetY;
+                                
+                                specialEffects.push({ 
+                                    type: 'cross_laser_field', 
+                                    x: tx, y: ty, 
+                                    radius: 50, 
+                                    timer: 180, 
+                                    dmg: (stat.dmg / 18) * atkBuffMultiplier * globalDmgMulti * t.rMult 
+                                });
+                            }
+                            t.cd = stat.cd;
+                            triggerShake(5, 3);
+                        }
+                    } return;
+                }
+
+                if (stat.type === "laser") {
+                    if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                    else {
+                        let target = enemies.find(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange);
+                        if (target) {
+                            let dx = target.x - t.x, dy = target.y - t.y;
+                            let dist = Math.hypot(dx, dy);
+                            let nx = dx / dist, ny = dy / dist;
+                            
+                            let tx = t.x + nx * actualRange;
+                            let ty = t.y + ny * actualRange;
+                            
+                            specialEffects.push({ type: 'laser', x: t.x, y: t.y-10, tx: tx, ty: ty, alpha: 1.0, color: "235, 77, 75", width: 20 });
+                            
+                            let finalDmg = stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult;
+                            enemies.forEach(e => {
+                                let crossDist = (e.x - t.x) * nx + (e.y - t.y) * ny; 
+                                if (crossDist > 0 && crossDist < actualRange) {
+                                    let px = t.x + nx * crossDist, py = t.y + ny * crossDist;
+                                    if (Math.hypot(e.x - px, e.y - py) < (e.isBoss ? 45 : 25)) {
+                                        let d = finalDmg; if(e.defDebuff > 0) d *= 2; e.hp -= d;
+                                    }
+                                }
+                            });
+                            t.cd = stat.cd;
+                            triggerShake(5, 3);
+                        }
+                    } return;
+                }
+
+                if (stat.type === "aoe" || stat.type === "elite_aoe" || stat.type === "elite_vertical_laser") {
+                    if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                    else {
+                        let hitAny = false; let finalDmg = stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult;
+                        
+                        if (stat.type === "elite_vertical_laser") {
+                            let target = enemies.find(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange);
+                            if (target) {
+                                for(let i=0; i<4; i++) {
+                                    let offsetX = (i - 1.5) * 15;
+                                    let startY = 0; 
+                                    let endY = 500; 
+                                    specialEffects.push({ type: 'vertical_laser', x: target.x + offsetX, y: startY, ty: endY, alpha: 1.0, width: 8, color: "46, 204, 113" });
+                                    
+                                    enemies.forEach(e => {
+                                        if (Math.abs(e.x - (target.x + offsetX)) < 20) {
+                                            let d = finalDmg / 4; if(e.defDebuff > 0) d *= 2; e.hp -= d;
+                                        }
+                                    });
+                                }
+                                hitAny = true;
+                            }
+                        } else {
+                            enemies.forEach(e => { 
+                                if (Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange) { 
+                                    let d = finalDmg; if(e.defDebuff > 0) d *= 2; e.hp -= d; hitAny = true; 
+                                } 
+                            });
+                            if (hitAny) { 
+                                specialEffects.push({ type: 'circle', x: t.x, y: t.y, radius: 5, maxRadius: actualRange, alpha: 0.5, color: "142, 68, 173" });
+                            }
+                        }
+
+                        if (hitAny) t.cd = stat.cd;
+                    } return;
+                }
+
+                if (stat.type === "attack" || stat.type === "pierce" || stat.type === "chain" || stat.type === "triangle_bomb" || stat.type === "tech_missile") {
+                    if (t.type === 8 && t.superBuff > 0) { 
+                        if (t.cd > 0) t.cd -= (5 * spdBuffMultiplier);
+                        else {
+                            let targets = enemies.filter(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange).slice(0, 3);
+                            if(targets.length > 0) {
+                                targets.forEach(target => {
+                                    let dx = target.x - t.x, dy = target.y - t.y;
+                                    let dist = Math.hypot(dx, dy);
+                                    let nx = dx / dist, ny = dy / dist;
+                                    let tx = t.x + nx * actualRange;
+                                    let ty = t.y + ny * actualRange;
+                                    
+                                    specialEffects.push({ type: 'dual_laser', x: t.x + 12, y: t.y - 2, tx: tx, ty: ty, alpha: 1.0, width: 12 });
+                                    specialEffects.push({ type: 'dual_laser', x: t.x - 12, y: t.y - 2, tx: tx, ty: ty, alpha: 1.0, width: 12 });
+                                    
+                                    let finalDmg = stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult * 5;
+                                    enemies.forEach(e => {
+                                        let crossDist = (e.x - t.x) * nx + (e.y - t.y) * ny; 
+                                        if (crossDist > 0 && crossDist < actualRange) {
+                                            let px = t.x + nx * crossDist, py = t.y + ny * crossDist;
+                                            if (Math.hypot(e.x - px, e.y - py) < 20) {
+                                                let d = finalDmg; if(e.defDebuff > 0) d *= 2; e.hp -= d;
+                                                e.speed = e.baseSpeed * 0.1; e.slowTimer = 180;
+                                            }
+                                        }
+                                    });
+                                });
+                                t.cd = stat.cd;
+                                triggerShake(3, 2);
+                            }
+                        }
+                    } else if (stat.type === "tech_missile") { 
+                        if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                        else {
+                            let target = enemies.find(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange);
+                            if (target) {
+                                for(let m=0; m<5; m++) {
+                                    let offsetA = (m-2)*0.4;
+                                    let dx = (target.x) - t.x; let dy = (target.y) - t.y; let dist = Math.hypot(dx, dy);
+                                    let bAngle = Math.atan2(dy, dx) + offsetA;
+                                    bullets.push({
+                                        type: 89, grade: t.grade, x: t.x, y: t.y-10,
+                                        vx: Math.cos(bAngle)*12, vy: Math.sin(bAngle)*12,
+                                        targetId: target.id,
+                                        dmg: stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult,
+                                        slow: 0, isPierce: false, isChain: false, hitIds: []
+                                    });
+                                }
+                                t.cd = stat.cd;
+                            }
+                        }
+                    } else if (stat.type === "triangle_bomb") { 
+                        if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                        else {
+                            let target = enemies.find(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange);
+                            if (target) {
+                                let dx = target.x - t.x; let dy = target.y - t.y; let dist = Math.hypot(dx, dy);
+                                bullets.push({
+                                    type: 'triangle', grade: t.grade, x: t.x, y: t.y-10,
+                                    vx: (dx/dist)*13, vy: (dy/dist)*13, targetId: target.id,
+                                    dmg: stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult,
+                                    slow: 0, isPierce: false, isChain: false, hitIds: []
+                                });
+                                t.cd = stat.cd;
+                            }
+                        }
+                    } else {
+                        if (t.cd > 0) t.cd -= (1 * spdBuffMultiplier);
+                        else {
+                            let target = enemies.find(e => Math.hypot((e.x) - t.x, (e.y) - t.y) < actualRange);
+                            if (target) {
+                                let dx = (target.x) - t.x; let dy = (target.y) - t.y; let dist = Math.hypot(dx, dy);
+                                bullets.push({ 
+                                    type: t.type, grade: t.grade, x: t.x, y: t.y-10, vx: (dx / dist) * (t.type === 4 ? 20 : 12), vy: (dy / dist) * (t.type === 4 ? 20 : 12),
+                                    dmg: stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult, slow: stat.slow || 0, isPierce: stat.type === "pierce", isChain: stat.type === "chain", hitIds: [] 
+                                }); t.cd = stat.cd;
+                            }
+                        }
+                    }
+                }
+            });
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+
+                // 화염 미사일 투하 (충돌검사 스킵)
+                if (b.type === 'fire_missile') {
+                    b.y += b.vy; 
+                    
+                    ctx.save();
+                    ctx.translate(b.x, b.y);
+                    ctx.fillStyle = '#ff7675';
+                    ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(-5, -10); ctx.lineTo(5, -10); ctx.fill(); 
+                    ctx.fillStyle = 'yellow';
+                    ctx.beginPath(); ctx.moveTo(0, 5); ctx.lineTo(-2, -5); ctx.lineTo(2, -5); ctx.fill();
+                    ctx.restore();
+                    
+                    if (b.y >= b.targetY) {
+                        specialEffects.push({ type: 'circle', x: b.x, y: b.targetY, radius: 10, maxRadius: 30, alpha: 1.0, color: "235, 77, 75" });
+                        let e = enemies.find(en => en.id === b.targetId);
+                        if (e) {
+                            let dmg = e.hp * 0.1; // 현재 체력의 10%
+                            e.hp -= dmg;
+                            floatingTexts.push({x: e.x, y: e.y - 10, text: `-${Math.floor(dmg)}`, alpha: 1, color: "#e74c3c", vy: -1.5});
+                        }
+                        bullets.splice(i, 1);
+                    }
+                    continue;
+                }
+
+                if (b.type === 89 || b.type === 'triangle' || b.type === 'triangle_frag' || b.type === 'square') { 
+                    let tgt = enemies.find(e => e.id === b.targetId);
+                    if (tgt && tgt.hp > 0) {
+                        let dx = tgt.x - b.x; let dy = tgt.y - b.y;
+                        let dist = Math.hypot(dx, dy);
+                        if (dist > 0) {
+                            let speed = Math.hypot(b.vx, b.vy);
+                            b.vx = b.vx * 0.85 + (dx/dist) * speed * 0.15;
+                            b.vy = b.vy * 0.85 + (dy/dist) * speed * 0.15;
+                            let newDist = Math.hypot(b.vx, b.vy);
+                            b.vx = (b.vx / newDist) * speed;
+                            b.vy = (b.vy / newDist) * speed;
+                        }
+                    }
+                    b.x += b.vx; b.y += b.vy;
+
+                    let angle = Math.atan2(b.vy, b.vx);
+                    ctx.save();
+                    ctx.translate(b.x, b.y);
+                    ctx.rotate(angle);
+                    
+                    if (b.type === 'triangle' || b.type === 'triangle_frag') {
+                        ctx.fillStyle = '#e84393'; 
+                        if(b.type === 'triangle') {
+                            ctx.beginPath(); ctx.moveTo(8, 0); ctx.lineTo(-6, 6); ctx.lineTo(-6, -6); ctx.fill();
+                        } else {
+                            ctx.beginPath(); ctx.moveTo(4, 0); ctx.lineTo(-3, 3); ctx.lineTo(-3, -3); ctx.fill();
+                        }
+                    } else if (b.type === 'square') {
+                        ctx.fillStyle = '#27ae60'; ctx.fillRect(-5, -5, 10, 10);
+                        ctx.strokeStyle = '#2ecc71'; ctx.lineWidth = 2; ctx.strokeRect(-5, -5, 10, 10);
+                    } else { 
+                        let grad = ctx.createLinearGradient(-6, 0, 10, 0);
+                        grad.addColorStop(0, '#f39c12'); grad.addColorStop(1, '#f1c40f');
+                        ctx.fillStyle = grad; ctx.fillRect(-6, -3, 14, 6);
+                        ctx.fillStyle = 'white'; ctx.beginPath(); ctx.moveTo(8, -3); ctx.lineTo(13, 0); ctx.lineTo(8, 3); ctx.fill();
+                        ctx.fillStyle = '#e67e22'; ctx.beginPath(); ctx.moveTo(-6, -3); ctx.lineTo(-11, 0); ctx.lineTo(-6, 3); ctx.fill();
+                    }
+                    ctx.restore();
+
+                    if(frame % 3 === 0) {
+                        let effColor = (b.type === 'triangle') ? "232, 67, 147" : ((b.type === 'square') ? "46, 204, 113" : "241, 196, 15");
+                        specialEffects.push({ type: 'circle', x: b.x - b.vx*0.5, y: b.y - b.vy*0.5, radius: 1, maxRadius: 2, alpha: 0.5, color: effColor });
+                    }
+                } else {
+                    b.x += b.vx; b.y += b.vy;
+                    ctx.beginPath();
+                    if (b.type === 8) { 
+                        ctx.strokeStyle = '#fbc531'; ctx.lineWidth = 2; ctx.moveTo(b.x, b.y); 
+                        ctx.lineTo(b.x - b.vx*1.5 + (Math.random()*10-5), b.y - b.vy*1.5 + (Math.random()*10-5)); ctx.lineTo(b.x - b.vx*3, b.y - b.vy*3); ctx.stroke(); 
+                    } 
+                    else if (b.type === 0) { ctx.strokeStyle = '#fbc531'; ctx.lineWidth = 2; ctx.moveTo(b.x - b.vx*2, b.y - b.vy*2); ctx.lineTo(b.x, b.y); ctx.stroke(); } 
+                    else if (b.type === 1) { ctx.fillStyle = '#e17055'; ctx.arc(b.x, b.y, 5, 0, Math.PI * 2); ctx.fill(); } 
+                    else if (b.type === 3) { ctx.fillStyle = '#00cec9'; ctx.fillRect(b.x - 4, b.y - 4, 8, 8); } 
+                    else { ctx.fillStyle = '#fdcb6e'; ctx.arc(b.x, b.y, 4, 0, Math.PI * 2); ctx.fill(); }
+                }
+
+                if (b.x < 0 || b.x > 1000 || b.y < 0 || b.y > 500) { bullets.splice(i, 1); continue; }
+
+                let bulletRemoved = false;
+                for(let j = 0; j < enemies.length; j++) {
+                    let e = enemies[j];
+                    if (Math.hypot((e.x) - b.x, (e.y) - b.y) < (e.isBoss ? 35 : 15)) {
+                        if (b.isPierce && b.hitIds.includes(e.id)) continue;
+                        let applyDmg = b.dmg; if (e.defDebuff > 0) applyDmg *= 2; 
+                        
+                        let isSpecial = (e.rType === 1 || e.rType === 2);
+                        
+                        // 데미지 적용
+                        e.hp -= applyDmg; 
+
+                        // 30라운드 이상 & 반전/황금 몬스터 피격 시 이속 부스터 확률 발동 (최적화 추가)
+                        if (currentWaveIdx >= 29 && isSpecial && e.hp > 0 && e.baseSpeed < 5) {
+                            let boostChance = (e.rType === 2) ? 0.10 : 0.03; // 황금 10%, 반전 3%
+                            if (Math.random() < boostChance) {
+                                e.baseSpeed *= 1.3; // 기본 이속 영구 30% 증가
+                                e.speed = e.baseSpeed;
+                                floatingTexts.push({x: e.x, y: e.y - 30, text: "💨부스터!", alpha: 1, color: "#fff", vy: -2});
+                            }
+                        }
+                        
+                        if (b.type === 'triangle') {
+                            let count = 0;
+                            enemies.forEach(ce => {
+                                if (ce.id !== e.id && Math.hypot(ce.x - b.x, ce.y - b.y) < 200 && count < 3) {
+                                    let fdx = ce.x - b.x, fdy = ce.y - b.y, fdist = Math.hypot(fdx, fdy);
+                                    bullets.push({
+                                        type: 'triangle_frag', x: b.x, y: b.y, vx: (fdx/fdist)*15, vy: (fdy/fdist)*15,
+                                        targetId: ce.id, dmg: b.dmg * 0.4, isPierce: false, isChain: false, hitIds: []
+                                    });
+                                    count++;
+                                }
+                            });
+                            specialEffects.push({ type: 'circle', x: b.x, y: b.y, radius: 5, maxRadius: 15, alpha: 0.8, color: "232, 67, 147" }); 
+                        } else if (b.type === 'square') {
+                            enemies.forEach(ce => {
+                                if (ce.id !== e.id && Math.hypot(ce.x - b.x, ce.y - b.y) < 100) {
+                                    let d = b.dmg * 0.5; if(ce.defDebuff > 0) d *= 2; ce.hp -= d;
+                                }
+                            });
+                            specialEffects.push({ type: 'square_shatter', x: b.x, y: b.y, timer: 15 });
+                        } else if (b.type === 89) {
+                            specialEffects.push({ type: 'circle', x: b.x, y: b.y, radius: 5, maxRadius: 15, alpha: 0.8, color: "241, 196, 15" });
+                        }
+
+                        if (b.slow > 0) { e.speed = e.baseSpeed * b.slow; e.slowTimer = (b.type===88)?180:50; } 
+                        if (b.type === 3) { e.speed = e.baseSpeed * 0.2; e.slowTimer = 60; }
+                        if (b.isChain) {
+                            let hits = 1; 
+                            for (let k = 0; k < enemies.length; k++) {
+                                if (hits >= 3) break; let ce = enemies[k];
+                                if (ce.id !== e.id && Math.hypot(ce.x - e.x, ce.y - e.y) < 150) {
+                                    let cdmg = b.dmg * 0.8; if(ce.defDebuff > 0) cdmg *= 2; ce.hp -= cdmg; 
+                                    ctx.beginPath(); ctx.moveTo(e.x, e.y); ctx.lineTo(ce.x, ce.y); ctx.strokeStyle = '#fbc531'; ctx.lineWidth = 3; ctx.stroke(); hits++;
+                                }
+                            }
+                            bulletRemoved = true; break;
+                        }
+                        if (b.isPierce) b.hitIds.push(e.id); else { bulletRemoved = true; break; } 
+                    }
+                }
+                if(bulletRemoved) bullets.splice(i, 1);
+            }
+
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                if (enemies[i].hp <= 0) {
+                    money += enemies[i].reward;
+                    floatingTexts.push({x: enemies[i].x, y: enemies[i].y, text: `+${enemies[i].reward}만`, alpha: 1, color: "#f1c40f"});
+                    document.getElementById('money').innerText = money; enemies.splice(i, 1);
+                }
+            }
+
+            for (let i = specialEffects.length - 1; i >= 0; i--) {
+                let eff = specialEffects[i]; 
+                
+                // === 십자가 레이저 장판 그리기 ===
+                if (eff.type === 'cross_laser_field') {
+                    eff.timer--;
+                    let cx = eff.x, cy = eff.y, r = eff.radius;
+                    let alpha = Math.min(0.9, eff.timer / 15); 
+                    
+                    let gradX = ctx.createLinearGradient(cx - r, cy, cx + r, cy);
+                    gradX.addColorStop(0, `rgba(139, 0, 0, 0)`);
+                    gradX.addColorStop(0.5, `rgba(231, 76, 60, ${alpha})`); // 검붉은색 중심부
+                    gradX.addColorStop(1, `rgba(139, 0, 0, 0)`);
+
+                    let gradY = ctx.createLinearGradient(cx, cy - r, cx, cy + r);
+                    gradY.addColorStop(0, `rgba(139, 0, 0, 0)`);
+                    gradY.addColorStop(0.5, `rgba(231, 76, 60, ${alpha})`);
+                    gradY.addColorStop(1, `rgba(139, 0, 0, 0)`);
+
+                    let laserWidth = 14 + Math.sin(frame * 0.5) * 4;
+
+                    ctx.fillStyle = gradX; ctx.fillRect(cx - r, cy - laserWidth/2, r*2, laserWidth);
+                    ctx.fillStyle = gradY; ctx.fillRect(cx - laserWidth/2, cy - r, laserWidth, r*2);
+
+                    ctx.fillStyle = `rgba(255, 150, 150, ${alpha})`;
+                    ctx.fillRect(cx - laserWidth/4, cy - laserWidth/4, laserWidth/2, laserWidth/2);
+
+                    // 10프레임마다 데미지 판정
+                    if (eff.timer % 10 === 0) {
+                        enemies.forEach(e => {
+                            let touchX = Math.abs(e.x - cx) < r && Math.abs(e.y - cy) < laserWidth;
+                            let touchY = Math.abs(e.x - cx) < laserWidth && Math.abs(e.y - cy) < r;
+                            if (touchX || touchY) {
+                                let d = eff.dmg;
+                                if (e.defDebuff > 0) d *= 2;
+                                e.hp -= d;
+                                floatingTexts.push({x: e.x + (Math.random()*20-10), y: e.y - 10, text: `-${Math.floor(d)}`, alpha: 1, color: "#e74c3c", vy: -1.5});
+                            }
+                        });
+                    }
+
+                    if (eff.timer <= 0) specialEffects.splice(i, 1);
+                }
+                else if (eff.type === 'square_shatter') {
+                    ctx.fillStyle = "#2ecc71";
+                    for(let k=0; k<8; k++) {
+                        let angle = (Math.PI / 4) * k;
+                        let dist = (15 - eff.timer) * 4;
+                        ctx.fillRect(eff.x + Math.cos(angle)*dist, eff.y + Math.sin(angle)*dist, 4, 4);
+                    }
+                    eff.timer--;
+                    if (eff.timer <= 0) specialEffects.splice(i, 1);
+                } else if (eff.type === 'laser') {
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.tx, eff.ty);
+                    ctx.strokeStyle = `rgba(${eff.color}, ${eff.alpha})`; ctx.lineWidth = eff.width; ctx.stroke();
+                    
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.tx, eff.ty);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${eff.alpha})`; ctx.lineWidth = eff.width / 2; ctx.stroke();
+                    
+                    eff.alpha -= 0.05;
+                    if (eff.width > 0) eff.width -= 1;
+                    if (eff.alpha <= 0) specialEffects.splice(i, 1);
+                } else if (eff.type === 'vertical_laser') {
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.x, eff.ty);
+                    ctx.strokeStyle = `rgba(0, 0, 0, ${eff.alpha})`; ctx.lineWidth = eff.width; ctx.stroke();
+                    
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.x, eff.ty);
+                    ctx.strokeStyle = `rgba(46, 204, 113, ${eff.alpha})`; ctx.lineWidth = eff.width / 1.5; ctx.stroke();
+                    
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.x, eff.ty);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${eff.alpha})`; ctx.lineWidth = eff.width / 3; ctx.stroke();
+                    
+                    eff.alpha -= 0.05;
+                    if (eff.width > 0) eff.width -= 1;
+                    if (eff.alpha <= 0) specialEffects.splice(i, 1);
+                } else if (eff.type === 'dual_laser') {
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.tx, eff.ty);
+                    ctx.strokeStyle = `rgba(0, 0, 0, ${eff.alpha})`; ctx.lineWidth = eff.width; ctx.stroke();
+                    
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.tx, eff.ty);
+                    ctx.strokeStyle = `rgba(241, 196, 15, ${eff.alpha})`; ctx.lineWidth = eff.width / 1.5; ctx.stroke();
+                    
+                    ctx.beginPath(); ctx.moveTo(eff.x, eff.y); ctx.lineTo(eff.tx, eff.ty);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${eff.alpha})`; ctx.lineWidth = eff.width / 3; ctx.stroke();
+                    
+                    eff.alpha -= 0.05;
+                    if (eff.width > 0) eff.width -= 1;
+                    if (eff.alpha <= 0) specialEffects.splice(i, 1);
+                } else if (eff.type === 'circle') {
+                    eff.radius += 12; eff.alpha -= 0.04;
+                    ctx.beginPath(); ctx.arc(eff.x, eff.y, eff.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${eff.color}, ${eff.alpha})`; ctx.fill();
+                    if (eff.alpha <= 0) specialEffects.splice(i, 1);
+                }
+            }
+            
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i]; 
+                ft.y += (ft.vy || -1); 
+                ft.alpha -= 0.02;
+                ctx.fillStyle = ft.color || `rgba(255, 255, 255, ${ft.alpha})`;
+                ctx.font = 'bold 16px Arial'; ctx.fillText(ft.text, ft.x - 10, ft.y);
+                if (ft.alpha <= 0) floatingTexts.splice(i, 1);
+            }
+
+            for (let i = giantTexts.length - 1; i >= 0; i--) {
+                let gt = giantTexts[i]; gt.timer--; gt.scale += 0.01;
+                ctx.fillStyle = gt.color; ctx.font = `bold ${30 + gt.scale * 5}px Arial`; ctx.textAlign = "center";
+                ctx.lineWidth = 3; ctx.strokeStyle = 'black'; ctx.strokeText(gt.text, 500, 250);
+                ctx.fillText(gt.text, 500, 250); ctx.textAlign = "left"; 
+                if (gt.timer <= 0) giantTexts.splice(i, 1);
+            }
+
+            // === 💥 기술사/관리사/지도사/엘리트 컷신 이펙트 ===
+            if (skillCutin) {
+                skillCutin.timer--;
+                
+                let bgAlpha = Math.min(0.6, (90 - skillCutin.timer) * 0.1);
+                if (skillCutin.timer < 15) bgAlpha = skillCutin.timer / 15 * 0.6;
+                if (skillCutin.type === 10) {
+                    bgAlpha = Math.min(0.7, (120 - skillCutin.timer) * 0.05);
+                    if (skillCutin.timer < 20) bgAlpha = skillCutin.timer / 20 * 0.7;
+                }
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, bgAlpha);
+                ctx.fillStyle = 'rgba(0, 0, 0, 1.0)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.restore();
+
+                let maxTime = skillCutin.type === 10 ? 120 : 90;
+                let enterTime = skillCutin.type === 10 ? 100 : 75;
+
+                let slideX = 300;
+                if (skillCutin.timer > enterTime) {
+                    let t = (skillCutin.timer - enterTime) / (maxTime - enterTime); 
+                    slideX = 300 - (Math.pow(t, 2) * 500); 
+                } else if (skillCutin.timer < 15) {
+                    let t = (15 - skillCutin.timer) / 15; 
+                    slideX = 300 + (Math.pow(t, 2) * 800); 
+                }
+
+                ctx.save();
+                ctx.translate(slideX, 300);
+                ctx.scale(6, 6); 
+                drawCuteGirl(ctx, 0, 0, skillCutin.type, frame, skillCutin.rType, 0, false, true);
+                ctx.restore();
+
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, bgAlpha / 0.6); 
+                
+                let txtColor, txt;
+                if (skillCutin.type === 8) { txtColor = "#fbc531"; txt = "이 구역의 감리는 나다!!"; }
+                else if (skillCutin.type === 9) { txtColor = "#eb4d4b"; txt = "내가 이구역 소방기술사 선임이다!!"; }
+                else if (skillCutin.type === 6) { txtColor = "#e84393"; txt = "종합정밀점검 시작하겠습니다!"; }
+                else if (skillCutin.type === 7) { txtColor = "#d63031"; txt = "위험구역 접근 금지!!"; }
+                else if (skillCutin.type === 10) { txtColor = "#2ecc71"; txt = "음... 지적 사항이 많군..."; }
+
+                ctx.fillStyle = txtColor;
+                ctx.font = "italic bold 40px 'Malgun Gothic'";
+                ctx.strokeStyle = "black";
+                ctx.lineWidth = 5;
+                ctx.strokeText(txt, slideX + 120, 250);
+                ctx.fillText(txt, slideX + 120, 250);
+                ctx.restore();
+
+                if (skillCutin.timer <= 0) skillCutin = null;
+            }
+
+            // === 💀 Elite 사신 스킬 연출 (기존 유지) ===
+            if (reaperEffect) {
+                reaperEffect.timer--;
+                reaperEffect.alpha = Math.min(0.6, reaperEffect.alpha + 0.05);
+                if (reaperEffect.timer < 30) reaperEffect.alpha -= 0.1;
+                
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, reaperEffect.alpha);
+                ctx.translate(800, 250); 
+                
+                ctx.fillStyle = '#2d3436';
+                ctx.beginPath(); ctx.arc(0, -50, 60, Math.PI, 0); ctx.lineTo(80, 100); ctx.lineTo(-80, 100); ctx.fill(); 
+                
+                ctx.fillStyle = 'white'; 
+                ctx.beginPath(); ctx.arc(0, -60, 25, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = 'red'; 
+                ctx.fillRect(-15, -65, 10, 5); ctx.fillRect(5, -65, 10, 5);
+
+                ctx.fillStyle = 'yellow'; 
+                ctx.beginPath(); ctx.arc(0, -75, 28, Math.PI, 0); ctx.fill();
+                ctx.fillRect(-35, -75, 70, 5);
+
+                let fingerExt = (120 - reaperEffect.timer) * 3;
+                if (fingerExt > 100) fingerExt = 100;
+                ctx.fillStyle = 'white';
+                // 손가락 방향 왼쪽으로 (주인공이 오른쪽을 가리키므로)
+                ctx.fillRect(-40 - fingerExt, -20, fingerExt, 15);
+                ctx.beginPath(); ctx.arc(-40 - fingerExt, -12.5, 7.5, 0, Math.PI*2); ctx.fill();
+
+                ctx.restore();
+
+                if (reaperEffect.timer <= 0) reaperEffect = null;
+            }
+
+            if (fusionPairs.length > 0 && !isDemolishMode && !movingTower) {
+                fusionPairs.forEach(p => {
+                    let fY = p.my - 50; 
+                    ctx.fillStyle = 'rgba(46, 204, 113, 0.9)';
+                    ctx.fillRect(p.mx - 40, fY, 80, 30);
+                    ctx.strokeStyle = '#27ae60'; ctx.lineWidth = 2; ctx.strokeRect(p.mx - 40, fY, 80, 30);
+                    ctx.fillStyle = 'white'; ctx.font = 'bold 12px Arial'; ctx.textAlign = 'center';
+                    ctx.fillText("✨ 융합(10억)", p.mx, fY + 19);
+                    ctx.textAlign = 'left';
+                });
+            }
+
+            if (movingTower) {
+                let hc = Math.floor(mouseX / CELL_SIZE);
+                let hr = Math.floor(mouseY / CELL_SIZE);
+                let drawX = hc * CELL_SIZE + CELL_SIZE/2;
+                let drawY = hr * CELL_SIZE + CELL_SIZE/2;
+                ctx.globalAlpha = 0.5; drawCuteGirl(ctx, drawX, drawY, movingTower.type, frame, movingTower.rType, 0, false); ctx.globalAlpha = 1.0;
+            } else if (!selectedTower && mouseX > 0 && mouseX < 1000 && mouseY > 0 && mouseY < 500 && buildType !== null) {
+                let hc = Math.floor(mouseX / CELL_SIZE);
+                let hr = Math.floor(mouseY / CELL_SIZE);
+                let drawX = hc * CELL_SIZE + CELL_SIZE/2;
+                let drawY = hr * CELL_SIZE + CELL_SIZE/2;
+
+                if (buildType === 'gacha' || buildType === 'random') {
+                    ctx.fillStyle = 'white'; ctx.font = '14px Arial'; 
+                    let drawText = buildType === 'random' ? "일반 채용" : "가챠";
+                    ctx.fillText(`🎲 ${drawText}`, drawX - 30, drawY - 25);
+                } else if (!isDemolishMode) {
+                    let statIndex = Math.min(0, towerStats[buildType].length - 1);
+                    let drawRange = towerStats[buildType][statIndex].range * globalRangeMulti; 
+                    ctx.beginPath(); ctx.arc(drawX, drawY, drawRange, 0, Math.PI * 2);
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.1)'; ctx.fill(); ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; ctx.stroke();
+                    ctx.fillStyle = 'white'; ctx.font = '14px Arial'; ctx.fillText(`채용: ${towerStats[buildType][statIndex].cost}만`, drawX - 30, drawY - 25);
+                }
+            }
+
+            if (selectedTower && !isDemolishMode && !movingTower) {
+                let hx = selectedTower.x; let hy = selectedTower.y;
+                let uiY = hy - 50; 
+                if (uiY < 0) uiY = hy + 25; 
+                
+                ctx.strokeStyle = '#f1c40f'; ctx.lineWidth = 2; ctx.strokeRect(hx - 20, hy - 20, 40, 40);
+                ctx.fillStyle = 'rgba(44, 62, 80, 0.9)'; ctx.fillRect(hx - 45, uiY, 90, 25); 
+
+                let maxGrade = (selectedTower.rType > 0) ? 3 : towerStats[selectedTower.type].length - 1;
+                ctx.fillStyle = (selectedTower.grade < maxGrade) ? '#27ae60' : '#7f8c8d';
+                ctx.fillRect(hx - 40, uiY + 3, 40, 19);
+                ctx.fillStyle = 'white'; ctx.font = 'bold 11px Arial'; ctx.fillText("진급", hx - 32, uiY + 17);
+
+                ctx.fillStyle = '#3498db'; ctx.fillRect(hx + 2, uiY + 3, 40, 19);
+                ctx.fillStyle = 'white'; ctx.fillText("이동", hx + 10, uiY + 17);
+            }
+        }
+
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
