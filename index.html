@@ -11,7 +11,7 @@
             background-color: #1e272e; 
             color: white; 
             margin: 0; 
-            padding: 0; 
+            padding: 2px; /* 공간 확보를 위해 패딩 최소화 */
             overflow-x: hidden; 
             display: flex; 
             flex-direction: column; 
@@ -19,18 +19,25 @@
             touch-action: manipulation;
         }
         
-        /* 캔버스 래퍼: 게임 화면을 최우선으로 크게 */
+        /* 캔버스 래퍼: 게임 화면을 최우선으로, 단 UI 공간은 침범하지 않게 */
         #canvasWrapper { 
             position: relative; 
-            width: 100vw; 
+            width: 100%; 
             max-width: 1000px;
             background: #000;
+            display: flex;
+            justify-content: center;
         }
         
         canvas { 
             background: #dff9fb; 
             display: block;
             width: 100% !important; 
+            /* 가로 모드에서 캔버스가 화면을 다 잡아먹지 않도록 높이 50% 제한 추가 */
+            max-height: 50vh !important; 
+            /* 비율 2:1 (1000x500) 강제 유지하여 찌그러짐 완벽 방지 */
+            aspect-ratio: 2 / 1; 
+            object-fit: contain; 
             height: auto !important; 
             touch-action: none;
             border-bottom: 2px solid #535c68;
