@@ -1187,7 +1187,7 @@
         });
 
         function showClearSummary() {
-            let minutes = Math.floor(totalPlayFrames / 3600); let seconds = Math.floor((totalPlayFrames % 3600) / 60);
+            let minutes = Math.floor(totalPlayFrames / 60 / 60); let seconds = Math.floor((totalPlayFrames / 60) % 60);
             overlay.innerHTML = `
                 <div style="font-size: 50px; color: gold; text-shadow: 2px 2px 5px black; margin-bottom: 20px;">🏆 명예의 전당 🏆</div>
                 <div style="font-size: 24px; color: white; margin-bottom: 10px;">모든 고난을 뚫고 취업에 성공하셨습니다!</div>
@@ -1202,8 +1202,26 @@
             overlay.style.display = 'flex';
         }
 
-        function gameLoop() {
+        let lastRenderTime = 0;
+        const FPS = 60;
+        const frameInterval = 1000 / FPS;
+
+        function gameLoop(timestamp) {
             requestAnimationFrame(gameLoop);
+
+            // 시간 측정: 60FPS(약 16.6ms) 주기가 안 지났으면 그냥 리턴
+            if (!lastRenderTime) lastRenderTime = timestamp;
+            let delta = timestamp - lastRenderTime;
+
+            if (delta < frameInterval) return;
+
+            // 오차 보정 후 렌더링 시간 갱신
+            lastRenderTime = timestamp - (delta % frameInterval);
+
+            // --------------------------------------------------------
+            // 이 아래부터는 기존 gameLoop() 안에 있던 내용과 100% 동일합니다.
+            // --------------------------------------------------------
+
             if (!isGameStarted) return; 
 
             if (shakeFrames > 0) {
@@ -2046,7 +2064,7 @@
                 if (skillCutin.timer <= 0) skillCutin = null;
             }
 
-            // === 💀 Elite 사신 스킬 연출 (기존 유지) ===
+            // === 💀 Elite 사신 스킬 연출 ===
             if (reaperEffect) {
                 reaperEffect.timer--;
                 reaperEffect.alpha = Math.min(0.6, reaperEffect.alpha + 0.05);
@@ -2071,7 +2089,6 @@
                 let fingerExt = (120 - reaperEffect.timer) * 3;
                 if (fingerExt > 100) fingerExt = 100;
                 ctx.fillStyle = 'white';
-                // 손가락 방향 왼쪽으로 (주인공이 오른쪽을 가리키므로)
                 ctx.fillRect(-40 - fingerExt, -20, fingerExt, 15);
                 ctx.beginPath(); ctx.arc(-40 - fingerExt, -12.5, 7.5, 0, Math.PI*2); ctx.fill();
 
@@ -2135,6 +2152,7 @@
             }
         }
 
+        // 60FPS 프레임 고정
         requestAnimationFrame(gameLoop);
     </script>
 </body>
