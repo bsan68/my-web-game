@@ -192,6 +192,13 @@
             <button class="sys-btn" style="background:#e74c3c;" onclick="restartGame()">🔄 Restart</button>
             <button class="sys-btn" onclick="forceNextWave()">⏩ 웨이브 강제</button>
             <button id="btnDemolish" class="sys-btn" style="background:#7f8c8d;" onclick="toggleDemolish()">🔨 권고사직(제거)</button>
+
+            <p class="side-panel-title" style="margin-top: 15px;">🎵 사운드: <span id="volText">50%</span></p>
+            <div style="display: flex; gap: 5px;">
+                <button class="sys-btn" id="btnMute" style="flex:1; padding:5px;" onclick="toggleMute()">🔊 끄기</button>
+                <button class="sys-btn" style="flex:1; padding:5px;" onclick="adjustVolume(-0.1)">🔉 -</button>
+                <button class="sys-btn" style="flex:1; padding:5px;" onclick="adjustVolume(0.1)">🔊 +</button>
+            </div>
             
             <p class="side-panel-title" style="margin-top: 20px;">✨ 엑티브 스킬</p>
             <button id="skillBtn6" class="global-skill-btn" style="display:none;" onclick="useGlobalSkill(6)" onmouseover="showSkillDesc(6)" onmouseout="hideSkillDesc()">💼 종합 정밀점검</button>
@@ -272,6 +279,79 @@
         const infoContent = document.getElementById('infoContent');
         const skillDescText = document.getElementById('skillDescText');
         
+        // 🎵 웹 오디오 API 초기화 (효과음 엔진)
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+
+        // 🎚️ 볼륨 조절 변수 및 함수
+        let masterVolume = 0.5;
+        let isMuted = false;
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('btnMute').innerText = isMuted ? "🔇 켜기" : "🔊 끄기";
+            document.getElementById('volText').innerText = isMuted ? "MUTE" : Math.round(masterVolume * 100) + "%";
+        }
+
+        function adjustVolume(amount) {
+            if (isMuted) toggleMute(); // 음소거 상태에서 조절하면 음소거 해제
+            masterVolume += amount;
+            if (masterVolume <= 0) { masterVolume = 0; }
+            if (masterVolume > 1) { masterVolume = 1; }
+            document.getElementById('volText').innerText = Math.round(masterVolume * 100) + "%";
+        }
+
+        // 🔊 효과음 재생 함수 (캐릭터 및 스킬별 차별화)
+        function playSfx(type) {
+            if (isMuted || masterVolume <= 0) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            let freq1 = 440, freq2 = 440, typeOsc = 'sine', duration = 0.1, baseVol = 0.1;
+
+            switch(type) {
+                // 일반 캐릭터
+                case 'electric': freq1 = 800; freq2 = 1200; typeOsc = 'square'; duration = 0.1; break; 
+                case 'fire': freq1 = 150; freq2 = 50; typeOsc = 'sawtooth'; duration = 0.3; baseVol = 0.2; break; 
+                case 'ice': freq1 = 1200; freq2 = 200; typeOsc = 'sine'; duration = 0.2; break; 
+                case 'laser': freq1 = 800; freq2 = 100; typeOsc = 'sawtooth'; duration = 0.2; break; 
+                case 'heavy': freq1 = 100; freq2 = 30; typeOsc = 'square'; duration = 0.4; baseVol = 0.3; break; 
+                
+                // 💥 상위 캐릭터 고유 평타 사운드
+                case 'pierce_bomb': freq1 = 600; freq2 = 100; typeOsc = 'triangle'; duration = 0.25; baseVol = 0.2; break; // 6: 관리사 (날카로운 폭발)
+                case 'heavy_bomb': freq1 = 80; freq2 = 20; typeOsc = 'square'; duration = 0.5; baseVol = 0.35; break; // 7: 지도사 (묵직한 폭발)
+                case 'tech_missile': freq1 = 1500; freq2 = 500; typeOsc = 'sawtooth'; duration = 0.15; baseVol = 0.15; break; // 8: 건전기 (첨단 레이저 미사일)
+                case 'burn_laser': freq1 = 300; freq2 = 50; typeOsc = 'sawtooth'; duration = 0.6; baseVol = 0.25; break; // 9: 소방기술사 (타오르는 장판)
+                case 'holy_strike': freq1 = 2000; freq2 = 100; typeOsc = 'sine'; duration = 0.7; baseVol = 0.4; break; // 10: 엘리트 (압도적인 빛의 타격)
+                
+                // 🌟 엑티브 스킬 전용 사운드
+                case 'skill_explosion': freq1 = 150; freq2 = 10; typeOsc = 'sawtooth'; duration = 1.0; baseVol = 0.5; break; // 6 스킬 (거대한 연쇄 폭발)
+                case 'skill_debuff': freq1 = 1000; freq2 = 50; typeOsc = 'sine'; duration = 0.8; baseVol = 0.3; break; // 7 스킬 (주파수 하강, 기운빠지는 소리)
+                case 'skill_overdrive': freq1 = 200; freq2 = 2000; typeOsc = 'square'; duration = 1.2; baseVol = 0.3; break; // 8 스킬 (폭주, 주파수 급상승)
+                case 'skill_carpet_bomb': freq1 = 50; freq2 = 150; typeOsc = 'square'; duration = 0.8; baseVol = 0.5; break; // 9 스킬 (우르르쾅쾅 지진)
+                case 'skill_reaper': freq1 = 50; freq2 = 20; typeOsc = 'sawtooth'; duration = 2.0; baseVol = 0.6; break; // 10 스킬 (사신의 울음, 극저음)
+
+                default: freq1 = 500; freq2 = 300; typeOsc = 'square'; duration = 0.1; // 기본 공격
+            }
+
+            let finalVol = baseVol * masterVolume;
+
+            osc.type = typeOsc;
+            osc.frequency.setValueAtTime(freq1, now);
+            osc.frequency.exponentialRampToValueAtTime(freq2, now + duration);
+            
+            gainNode.gain.setValueAtTime(finalVol, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+            osc.start(now);
+            osc.stop(now + duration);
+        }
+
         const CELL_SIZE = 50;
         const COLS = 20; 
         const ROWS = 10; 
@@ -304,7 +384,9 @@
         const path = [{x:-50,y:250},{x:850,y:250},{x:850,y:400},{x:150,y:400},{x:150,y:100},{x:1050,y:100}];
 
         function startGame(difficulty) {
-            // 난이도 30% 추가 증가 (기존 대비 전체적으로 상향)
+            // 게임 시작 시 오디오 활성화
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+
             if (difficulty === 'easy') diffMult = 1.56; 
             else if (difficulty === 'normal') diffMult = 1.872; 
             else if (difficulty === 'hard') diffMult = 2.4336; 
@@ -655,7 +737,7 @@
             if (type === 0 || type === 8) { ctx.fillStyle = "yellow"; ctx.fillRect(5, -22+bob+sitOffsetY, 3, 5); } 
             else if (type === 1 || type === 9) { ctx.fillStyle = "#e17055"; ctx.beginPath(); ctx.arc(0, -20+bob+sitOffsetY, 6, Math.PI, 0); ctx.fill(); } 
             else if (type === 2 || type === 5) { ctx.fillStyle = "yellow"; ctx.beginPath(); ctx.arc(0, -20+bob+sitOffsetY, 6, Math.PI, 0); ctx.fill(); } 
-            else if (type === 4) { ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-11, -12+bob+sitOffsetY); ctx.lineTo(11, -12+bob+sitOffsetY); ctx.stroke(); } 
+            else if (type === 4) { ctx.strokeStyle = "white"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-11, -12+bob+sitOffsetY); ctx.stroke(); } 
             else if (type === 6) { ctx.fillStyle = "#34495e"; ctx.fillRect(-12, 2+bob+sitOffsetY, 6, 8); } 
             else if (type === 7) { ctx.fillStyle = "gold"; ctx.beginPath(); ctx.moveTo(-6, -22+bob+sitOffsetY); ctx.lineTo(-3, -28+bob+sitOffsetY); ctx.lineTo(0, -23+bob+sitOffsetY); ctx.lineTo(3, -28+bob+sitOffsetY); ctx.lineTo(6, -22+bob+sitOffsetY); ctx.fill(); } 
             else if (type === 10) { 
@@ -941,9 +1023,11 @@
                 alert(`🎉 대박!! 투자에 성공하여 ${winAmount}만 원을 획득했습니다!`);
                 giantTexts.push({text: `🎰 +${winAmount}만!!`, color: "#2ecc71", timer: 60, scale: 0});
                 triggerShake(10, 5);
+                playSfx('skill_buff'); // 도박 성공 효과음
             } else {
                 alert(`💀 꽝... 투자한 ${betAmount}만 원을 모두 날렸습니다...`);
                 giantTexts.push({text: `🎰 -${betAmount}만...`, color: "#e74c3c", timer: 60, scale: 0});
+                playSfx('skill_debuff'); // 도박 실패 효과음
             }
             
             document.getElementById('money').innerText = money;
@@ -1042,6 +1126,7 @@
                     t.maxHp = nextStat.cost * hpMultiplier * t.rMult * (t.grade + 1); 
                     t.hp = t.maxHp; 
                     floatingTexts.push({x: t.x, y: t.y-25, text: overGrade > 0 ? "초월 진급!" : "진급 완료!", alpha: 1, color: "#f1c40f"});
+                    playSfx('skill_buff'); // 진급 효과음
                     showTowerInfo(t); 
                 } else floatingTexts.push({x: t.x, y: t.y-25, text: `예산 부족!(${upgradeCost}만 필요)`, alpha: 1, color: "#e74c3c"});
             }
@@ -1088,6 +1173,7 @@
             specialEffects.push({ type: 'circle', x: pair.t1.x, y: pair.t1.y, radius: 20, maxRadius: 100, alpha: 1.0, color: "46, 204, 113" });
             giantTexts.push({text: "✨ 엘리트 융합 성공!! ✨", color: "#2ecc71", timer: 90, scale: 0});
             triggerShake(20, 10);
+            playSfx('holy_strike'); // 융합 효과음
             
             document.getElementById('money').innerText = money;
             fusionPairs = []; 
@@ -1107,15 +1193,18 @@
                 specialEffects.push({ type: 'circle', x: t.x, y: t.y, radius: 10, maxRadius: 300, alpha: 0.8, color: "232, 67, 147" });
                 triggerShake(10, 5);
                 skillCutin = { type: 6, timer: 90, rType: t.rType };
+                playSfx('skill_explosion'); // 🔊 6번 스킬음
             } else if (t.type === 7) { 
                 enemies.forEach(e => { if (Math.hypot(e.x - t.x, e.y - t.y) < actualRange) e.defDebuff = 600; });
                 specialEffects.push({ type: 'circle', x: t.x, y: t.y, radius: 10, maxRadius: actualRange, alpha: 0.5, color: "214, 48, 49" });
                 triggerShake(10, 5);
                 skillCutin = { type: 7, timer: 90, rType: t.rType };
+                playSfx('skill_debuff'); // 🔊 7번 스킬음
             } else if (t.type === 8) { 
                 t.superBuff = 1800; 
                 triggerShake(20, 10); 
                 skillCutin = { type: 8, timer: 90, rType: t.rType };
+                playSfx('skill_overdrive'); // 🔊 8번 스킬음
             } else if (t.type === 9) { 
                 triggerShake(30, 15); 
                 
@@ -1137,6 +1226,7 @@
                 });
                 
                 skillCutin = { type: 9, timer: 90, rType: t.rType };
+                playSfx('skill_carpet_bomb'); // 🔊 9번 스킬음
             } else if (t.type === 10) { 
                 reaperEffect = { timer: 120, alpha: 0 };
                 triggerShake(40, 15); 
@@ -1158,6 +1248,7 @@
                 
                 skillCutin = { type: 10, timer: 120, rType: t.rType };
                 t.skillCd = 1800; 
+                playSfx('skill_reaper'); // 🔊 10번 스킬음
                 return; 
             }
             t.skillCd = (t.type === 8 || t.type === 9) ? 1800 + 900 : 900; 
@@ -1723,6 +1814,7 @@
                                 dmg: stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult,
                                 isPierce: false, isChain: false, hitIds: []
                             });
+                            playSfx('heavy_bomb'); // 🔊 추가됨
                         }
                         t.cd = stat.cd;
                     }
@@ -1751,6 +1843,7 @@
                             }
                             t.cd = stat.cd;
                             triggerShake(5, 3);
+                            playSfx('burn_laser'); // 🔊 추가됨
                         }
                     } return;
                 }
@@ -1781,6 +1874,7 @@
                             });
                             t.cd = stat.cd;
                             triggerShake(5, 3);
+                            playSfx('laser'); // 🔊 추가됨
                         }
                     } return;
                 }
@@ -1818,7 +1912,11 @@
                             }
                         }
 
-                        if (hitAny) t.cd = stat.cd;
+                        if (hitAny) {
+                            t.cd = stat.cd;
+                            if (stat.type === "elite_vertical_laser") playSfx('holy_strike');
+                            else playSfx(stat.type.includes('laser') ? 'laser' : 'heavy');
+                        }
                     } return;
                 }
 
@@ -1852,6 +1950,7 @@
                                 });
                                 t.cd = stat.cd;
                                 triggerShake(3, 2);
+                                playSfx('tech_missile'); // 🔊 추가됨
                             }
                         }
                     } else if (stat.type === "tech_missile") { 
@@ -1872,6 +1971,7 @@
                                     });
                                 }
                                 t.cd = stat.cd;
+                                playSfx('tech_missile'); // 🔊 추가됨
                             }
                         }
                     } else if (stat.type === "triangle_bomb") { 
@@ -1887,6 +1987,7 @@
                                     slow: 0, isPierce: false, isChain: false, hitIds: []
                                 });
                                 t.cd = stat.cd;
+                                playSfx('pierce_bomb'); // 🔊 추가됨
                             }
                         }
                     } else {
@@ -1898,7 +1999,14 @@
                                 bullets.push({ 
                                     type: t.type, grade: t.grade, x: t.x, y: t.y-10, vx: (dx / dist) * (t.type === 4 ? 20 : 12), vy: (dy / dist) * (t.type === 4 ? 20 : 12),
                                     dmg: stat.dmg * atkBuffMultiplier * globalDmgMulti * t.rMult, slow: stat.slow || 0, isPierce: stat.type === "pierce", isChain: stat.type === "chain", hitIds: [] 
-                                }); t.cd = stat.cd;
+                                }); 
+                                t.cd = stat.cd;
+                                
+                                // 🔊 캐릭터별 기본 공격음
+                                if (t.type === 0) playSfx('electric');
+                                else if (t.type === 1) playSfx('fire');
+                                else if (t.type === 3) playSfx('ice');
+                                else playSfx('default');
                             }
                         }
                     }
